@@ -19,6 +19,7 @@
             <field name="name">Comprendre</field>
             <field name="slug">comprendre</field>
             <field name="sequence">60</field>
+            <field name="icon" type="base64" file="comprendre_backend/static/description/icon.png"/>
             <field name="summary">Un quiz pour mieux comprendre n'importe quel texte : saisi, photographié ou importé</field>
             <field name="min_android">8.0</field>
         </record>
