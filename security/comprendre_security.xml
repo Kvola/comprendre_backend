@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_comprendre_manager" model="res.groups">
+        <field name="name">Comprendre — Gestionnaire</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Suit l'usage et le coût du service de quiz IA, bloque un appareil abusif.</field>
+    </record>
+    <record id="base.user_admin" model="res.users">
+        <field name="group_ids" eval="[(4, ref('group_comprendre_manager'))]"/>
+    </record>
+</odoo>
