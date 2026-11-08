@@ -15,6 +15,15 @@ _logger = logging.getLogger(__name__)
 
 DEFAULT_MODEL = 'claude-opus-5-5'
 MIN_CHARS = 200
+
+
+class Refusal(UserError):
+    """Refus avec un code machine (``reason``) : l'application affiche son propre message traduit."""
+
+    def __init__(self, message, reason):
+        super().__init__(message)
+        self.reason = reason
+
 MIN_VALID_QUESTIONS = 3
 
 # Schéma de la réponse attendue (sorties structurées : le JSON est garanti conforme).
@@ -92,7 +101,7 @@ class ComprendreDevice(models.Model):
     def _for_key(self, device_key):
         key = str(device_key or '').strip()
         if not re.match(r'^[A-Za-z0-9_-]{16,128}$', key):
-            raise UserError(_("Identifiant d'appareil invalide."))
+            raise Refusal(_("Identifiant d'appareil invalide."), 'bad_device')
         digest = hashlib.sha256(key.encode()).hexdigest()
         device = self.search([('key_hash', '=', digest)], limit=1)
         if not device:
@@ -158,7 +167,7 @@ class ComprendreAiRequest(models.Model):
         import anthropic  # noqa: PLC0415 — dépendance déclarée au manifeste
         key = self._param('comprendre.anthropic_api_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
         if not key:
-            raise UserError(_("Le service de quiz IA n'est pas configuré."))
+            raise Refusal(_("Le service de quiz IA n'est pas configuré."), 'not_configured')
         return anthropic.Anthropic(api_key=key, timeout=120.0, max_retries=2)
 
     @api.model
@@ -185,21 +194,21 @@ class ComprendreAiRequest(models.Model):
                 }],
             )
         except anthropic.RateLimitError as e:
-            raise UserError(_("Le service est très demandé : réessayez dans quelques minutes.")) from e
+            raise Refusal(_("Le service est très demandé : réessayez dans quelques minutes."), 'busy') from e
         except anthropic.APIStatusError as e:
             _logger.warning("Comprendre : erreur de l'API Claude %s", e.status_code)
-            raise UserError(_("Le service de quiz IA est momentanément indisponible.")) from e
+            raise Refusal(_("Le service de quiz IA est momentanément indisponible."), 'unavailable') from e
         except anthropic.APIConnectionError as e:
-            raise UserError(_("Le service de quiz IA est injoignable.")) from e
+            raise Refusal(_("Le service de quiz IA est injoignable."), 'unavailable') from e
         if response.stop_reason == 'refusal':
-            raise UserError(_("Ce texte ne peut pas être traité par le service de quiz IA."))
+            raise Refusal(_("Ce texte ne peut pas être traité par le service de quiz IA."), 'refused_content')
         if response.stop_reason == 'max_tokens':
-            raise UserError(_("Le texte est trop long pour un quiz complet : raccourcissez-le."))
+            raise Refusal(_("Le texte est trop long pour un quiz complet : raccourcissez-le."), 'too_long')
         payload = next((b.text for b in response.content if b.type == 'text'), '')
         try:
             data = json.loads(payload)
         except ValueError as e:
-            raise UserError(_("Réponse illisible du service de quiz IA.")) from e
+            raise Refusal(_("Réponse illisible du service de quiz IA."), 'bad_response') from e
         usage = response.usage
         return data, usage.input_tokens or 0, usage.output_tokens or 0, response.model
 
@@ -247,22 +256,22 @@ class ComprendreAiRequest(models.Model):
         demandes simultanées du même téléphone ne peuvent pas dépasser le quota.
         """
         if self._param('comprendre.enabled', '1') in ('0', 'False', 'false'):
-            raise UserError(_("Le service de quiz IA est désactivé."))
+            raise Refusal(_("Le service de quiz IA est désactivé."), 'disabled')
         text = (text or '').strip()
         max_chars = self._int_param('comprendre.max_chars', 30000)
         if len(text) < MIN_CHARS:
-            raise UserError(_("Texte trop court pour un quiz (%s caractères au moins).", MIN_CHARS))
+            raise Refusal(_("Texte trop court pour un quiz (%s caractères au moins).", MIN_CHARS), 'too_short')
         if len(text) > max_chars:
-            raise UserError(_("Texte trop long (%s caractères au plus) : choisissez un passage.", max_chars))
+            raise Refusal(_("Texte trop long (%s caractères au plus) : choisissez un passage.", max_chars), 'too_long')
         lang = 'en' if lang == 'en' else 'fr'
         count = max(5, min(int(count or 10), 15))
         self.env.cr.execute('SELECT id FROM comprendre_device WHERE id = %s FOR UPDATE', [device.id])
         if device.blocked:
-            raise UserError(_("Cet appareil ne peut plus obtenir de quiz IA."))
+            raise Refusal(_("Cet appareil ne peut plus obtenir de quiz IA."), 'blocked')
         if self._remaining(device) <= 0:
-            raise UserError(_("Quota du jour atteint : le quiz est créé sur votre téléphone."))
+            raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
         if self._ip_exhausted(ip_hash):
-            raise UserError(_("Trop de demandes depuis ce réseau aujourd'hui."))
+            raise Refusal(_("Trop de demandes depuis ce réseau aujourd'hui."), 'network_quota')
         device.last_seen = fields.Datetime.now()
 
         log = self.create({'device_id': device.id, 'ip_hash': ip_hash, 'lang': lang, 'chars': len(text)})
@@ -274,14 +283,15 @@ class ComprendreAiRequest(models.Model):
         except UserError as e:
             message = str(e.args[0])
             log.write({'state': 'failed', 'error': message[:200], 'duration_ms': int((time.monotonic() - started) * 1000)})
-            return {'error': message}
+            return {'error': message, 'reason': getattr(e, 'reason', 'ai_error')}
         questions, dropped = self._validate(data, text)
         state = 'done' if len(questions) >= MIN_VALID_QUESTIONS else 'rejected'
         log.write({'state': state, 'model': model, 'input_tokens': tokens_in, 'output_tokens': tokens_out,
                    'questions': len(questions), 'dropped': dropped,
                    'duration_ms': int((time.monotonic() - started) * 1000)})
         if state != 'done':
-            return {'error': _("Le quiz IA n'a pas pu être vérifié : le quiz est créé sur votre téléphone.")}
+            return {'error': _("Le quiz IA n'a pas pu être vérifié : le quiz est créé sur votre téléphone."),
+                    'reason': 'unverified'}
         return {
             'title': (data.get('title') or '').strip()[:200],
             'summary': (data.get('summary') or '').strip()[:1000],

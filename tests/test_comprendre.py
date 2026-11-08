@@ -75,8 +75,9 @@ class TestComprendre(TransactionCase):
         with self._patch():
             self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
             self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
-            with self.assertRaises(UserError):
+            with self.assertRaises(UserError) as ctx:
                 self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+            self.assertEqual(ctx.exception.reason, 'quota')
         other = self.env['comprendre.device']._for_key('device-fedcba9876543210')
         with self._patch():
             self.assertIn('questions', self.Req._generate(other, 'ip2', TEXT, 'fr', 10))
@@ -119,6 +120,7 @@ class TestComprendre(TransactionCase):
         with patch.dict('os.environ', {'ANTHROPIC_API_KEY': ''}):
             r = self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
         self.assertIn("pas configuré", r['error'])
+        self.assertEqual(r['reason'], 'not_configured')
 
 
 @tagged('post_install', '-at_install')
@@ -141,3 +143,6 @@ class TestComprendreApi(HttpCase):
             self.assertEqual(r['remaining'], 4)
             bad = self.rpc('/quiz', device_id='x', text=TEXT)
             self.assertEqual(bad['error']['code'], 'REFUSED')
+            self.assertEqual(bad['error']['details']['reason'], 'bad_device')
+            short = self.rpc('/quiz', device_id='api-device-0123456789', text='Trop court.')
+            self.assertEqual(short['error']['details']['reason'], 'too_short')

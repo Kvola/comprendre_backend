@@ -39,7 +39,7 @@ class ComprendreApi(Controller):
         try:
             device = request.env['comprendre.device'].sudo()._for_key(kw.get('device_id'))
         except UserError as e:
-            return fail('BAD_REQUEST', str(e.args[0]))
+            return fail('BAD_REQUEST', str(e.args[0]), reason=getattr(e, 'reason', 'bad_request'))
         Req = request.env['comprendre.ai.request'].sudo()
         return ok(remaining=Req._remaining(device), daily=Req._int_param('comprendre.daily_quota', 5),
                   max_chars=Req._int_param('comprendre.max_chars', 30000),
@@ -50,13 +50,15 @@ class ComprendreApi(Controller):
         ip = _ip_hash()
         blocked, seconds = request.env['otp.rate.limit'].sudo().check_and_record('comprendre:quiz:%s' % ip, *RL_QUIZ)
         if blocked:
-            return fail('AUTH_010', _("Trop de demandes. Réessayez dans %s minute(s).", max(1, round(seconds / 60))))
+            minutes = max(1, round(seconds / 60))
+            return fail('AUTH_010', _("Trop de demandes. Réessayez dans %s minute(s).", minutes), reason='rate_limited',
+                        minutes=minutes)
         Req = request.env['comprendre.ai.request'].sudo()
         try:
             device = request.env['comprendre.device'].sudo()._for_key(kw.get('device_id'))
             result = Req._generate(device, ip, kw.get('text'), kw.get('lang'), kw.get('count'))
         except UserError as e:
-            return fail('REFUSED', str(e.args[0]))
+            return fail('REFUSED', str(e.args[0]), reason=getattr(e, 'reason', 'refused'))
         if result.get('error'):
-            return fail('AI_FAILED', result['error'])
+            return fail('AI_FAILED', result['error'], reason=result.get('reason', 'ai_error'))
         return ok(**result)
