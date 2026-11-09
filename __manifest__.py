@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Comprendre — quiz de compréhension par IA",
-    'version': '19.0.1.1.0',
+    'version': '19.0.1.1.1',
     'category': 'Productivity',
     'summary': "Serveur de l'application Comprendre : génère un quiz de compréhension "
                "à partir d'un texte avec Claude, quota quotidien par appareil",

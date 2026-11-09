@@ -49,6 +49,8 @@
             </li>
             <li><a href="#les-réglages">Les réglages</a>
             </li>
+            <li><a href="#utiliser-lapplication-dans-le-navigateur">Utiliser l'application dans le navigateur</a>
+            </li>
             <li><a href="#questions-fréquentes">Questions fréquentes</a>
             </li></ul>
             </nav>
@@ -398,6 +400,39 @@
             <td>Une présentation de Comprendre, la <strong>Confidentialité</strong>, et le numéro de version.</td>
             </tr>
             </table></div>
+            <hr/>
+            <h2 id="utiliser-lapplication-dans-le-navigateur">Utiliser l'application dans le navigateur</h2>
+            <p>Comprendre existe aussi en <strong>version web</strong> : elle s'ouvre dans le navigateur, sans rien installer. C'est la solution pour un <strong>iPhone</strong>, un <strong>iPad</strong> ou un <strong>ordinateur</strong>, où l'application Android ne s'installe pas.</p>
+            <p><strong>L'ouvrir</strong></p>
+            <ol>
+            <li>Ouvrez la page https://iyf.ebng.world/apps/comprendre dans votre navigateur (Safari, Chrome, Edge…).
+            </li>
+            <li>Touchez <strong>Ouvrir dans le navigateur</strong>. L'adresse directe est https://iyf.ebng.world/apps/comprendre/web/
+            </li></ol>
+            <p><strong>La mettre sur l'écran d'accueil</strong></p>
+            <p>Ainsi, vous la retrouvez comme une application, elle s'ouvre en plein écran, et le navigateur conserve mieux vos données.</p>
+            <ul>
+            <li><strong>iPhone ou iPad (Safari)</strong> : touchez <strong>Partager</strong> (le carré avec une flèche vers le haut), puis <strong>Sur l'écran d'accueil</strong>, puis <strong>Ajouter</strong>. Le bandeau <strong>Ajoutez l'application à l'écran d'accueil</strong> vous le rappelle ; touchez <strong>Compris</strong> pour le masquer.
+            </li>
+            <li><strong>Ordinateur (Chrome ou Edge)</strong> : cliquez sur l'icône d'installation à droite de la barre d'adresse, puis sur <strong>Installer</strong>.
+            </li>
+            <li><strong>Android (Chrome)</strong> : menu <strong>⋮</strong>, puis <strong>Ajouter à l'écran d'accueil</strong>. Sur Android, l'application à télécharger reste toutefois la plus complète.
+            </li></ul>
+            <p><strong>Les mises à jour</strong></p>
+            <p>Rien à faire : à chaque ouverture avec Internet, vous avez la dernière version.</p>
+            <p><strong>Sans Internet</strong></p>
+            <p>Après une première ouverture avec Internet, la version web fonctionne <strong>sans connexion</strong> : vos textes et les quiz hors ligne restent disponibles. Le quiz IA demande Internet, comme dans l'application.</p>
+            <p><strong>Ce qui diffère</strong></p>
+            <ul>
+            <li><strong>Scanner des pages</strong> et <strong>lire le texte d'une photo</strong> ne sont pas proposés : cette lecture n'existe que dans l'application Android. Collez ou tapez le texte, ou importez un fichier.
+            </li>
+            <li>Dans un <strong>PDF</strong>, seul le texte numérique est lu ; les pages scannées (des images) sont ignorées.
+            </li>
+            <li><strong>Partager</strong> un texte ouvre le partage du navigateur ; s'il n'en a pas, le texte est téléchargé dans un fichier <code>.txt</code>.
+            </li></ul>
+            <p><strong>Vos textes</strong></p>
+            <p>Ils sont gardés <strong>dans ce navigateur, sur cet appareil</strong>, et ne passent pas d'un appareil à l'autre.</p>
+            <div class="attention"><p><strong>Attention (iPhone)</strong> : si la version web n'est pas sur l'écran d'accueil et que vous ne l'ouvrez pas pendant plusieurs semaines, Safari peut effacer vos textes. Mettez-la sur l'écran d'accueil.</p></div>
             <hr/>
             <h2 id="questions-fréquentes">Questions fréquentes</h2>
             <p><strong>Faut-il Internet ?</strong><br/>Non. Saisir un texte, le scanner, l'importer et créer un quiz hors ligne fonctionnent sans connexion. Internet sert seulement pour les quiz IA, le partage d'un texte, et le téléchargement de l'application.</p>
