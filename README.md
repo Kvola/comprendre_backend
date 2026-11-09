@@ -10,6 +10,14 @@ Module Odoo 19 : serveur de l'application **Comprendre** (quiz de compréhension
 - **Pas d'invention** : chaque question doit citer mot pour mot un passage du texte ; sinon elle est écartée. Moins de 3 questions valides : le quiz est refusé et l'application garde son quiz hors ligne.
 - **Journal** (Comprendre > Demandes de quiz IA) : jetons consommés, durée, résultat, y compris les échecs. Le texte lui-même n'est pas conservé.
 
+## Guide d'utilisation
+
+`/apps/comprendre/guide` et `/apps/comprendre/guide.pdf`. Source unique : `comprendre/docs/GUIDE_UTILISATEUR.md` ; `reports/user_guide.xml` est **produit**. Après une modification du Markdown, depuis le dossier `sunday_jobs` :
+
+```bash
+python3 docs/md_to_guide_qweb.py comprendre
+```
+
 ## Réglages (Paramètres système)
 
 | Clé | Défaut | Rôle |

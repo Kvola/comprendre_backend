@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ═══════════════════════════════════════════════════════════════════════
+     LE GUIDE DE COMPRENDRE — FICHIER PRODUIT, NE PAS MODIFIER À LA MAIN
+
+     Source unique : comprendre/docs/GUIDE_UTILISATEUR.md
+     Régénérer (depuis le dossier sunday_jobs) :
+
+         python3 docs/md_to_guide_qweb.py comprendre
+
+     Une correction faite ici serait perdue à la prochaine conversion, et le
+     guide du dépôt de l'application continuerait à dire autre chose.
+═══════════════════════════════════════════════════════════════════════ -->
+<odoo>
+
+    <!-- Le contenu : appelé par la page en ligne (/apps/comprendre/guide) et par
+         le rapport imprimé ci-dessous. Il ne porte aucune couleur. -->
+    <template id="user_guide_content" name="Guide Comprendre — contenu">
+        <t>
+            <p><em>Un quiz pour comprendre n’importe quel texte.</em></p>
+            <p>Comprendre vous aide à <strong>vérifier que vous avez bien compris un texte</strong>. Vous lui donnez un texte : une leçon, un article, une page de livre, un document de travail. L'application vous pose des questions dessus. Chaque réponse est expliquée et renvoie au <strong>passage du texte</strong> qui la justifie.</p>
+            <p>Le texte peut être écrit ou collé, photographié avec le scanner, lu sur une photo de votre galerie, ou importé d'un fichier (PDF, Word, PowerPoint…). Le quiz se crée <strong>sur votre téléphone, sans Internet</strong>. Avec une connexion, et si vous l'acceptez, Comprendre peut aussi demander à une IA un quiz plus riche, dans la limite de quelques quiz gratuits par jour.</p>
+            <p>Ce guide commence par une visite rapide, puis présente <strong>7 exemples complets</strong>, tirés de la vie de tous les jours.</p>
+            <hr/>
+            <nav class="sommaire">
+            <h2 id="sommaire">Sommaire</h2>
+            <ul>
+            <li><a href="#visite-rapide">Visite rapide</a>
+            </li>
+            <li><a href="#premier-lancement">Premier lancement</a>
+            </li>
+            <li>Exemples :
+            <ol>
+            <li><a href="#exemple-1--coller-un-texte-et-faire-son-premier-quiz">Coller un texte et faire son premier quiz</a>
+            </li>
+            <li><a href="#exemple-2--scanner-les-pages-dun-livre">Scanner les pages d'un livre</a>
+            </li>
+            <li><a href="#exemple-3--lire-le-texte-dune-photo">Lire le texte d'une photo</a>
+            </li>
+            <li><a href="#exemple-4--importer-un-fichier-pdf-ou-word">Importer un fichier PDF ou Word</a>
+            </li>
+            <li><a href="#exemple-5--répondre-aux-questions-et-comprendre-ses-erreurs">Répondre aux questions et comprendre ses erreurs</a>
+            </li>
+            <li><a href="#exemple-6--refaire-un-quiz-ou-en-créer-un-autre">Refaire un quiz ou en créer un autre</a>
+            </li>
+            <li><a href="#exemple-7--corriger-partager-ou-supprimer-un-texte">Corriger, partager ou supprimer un texte</a>
+            </li></ol>
+            </li>
+            <li><a href="#quiz-hors-ligne-et-quiz-ia">Quiz hors ligne et quiz IA</a>
+            </li>
+            <li><a href="#les-réglages">Les réglages</a>
+            </li>
+            <li><a href="#questions-fréquentes">Questions fréquentes</a>
+            </li></ul>
+            </nav>
+            <hr/>
+            <h2 id="visite-rapide">Visite rapide</h2>
+            <p>Comprendre tient en quelques écrans :</p>
+            <div class="tableau"><table>
+            <tr>
+            <th>Écran</th>
+            <th>À quoi il sert</th>
+            </tr>
+            <tr>
+            <td><strong>Mes textes</strong></td>
+            <td>L'écran d'accueil. Il liste vos textes, avec le nombre de quiz et la date. Le bouton <strong>Nouveau texte</strong>, en bas, ajoute un texte. L'icône ⚙ en haut à droite ouvre les <strong>Réglages</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Nouveau texte</strong></td>
+            <td>Les quatre façons d'apporter un texte : <strong>Écrire ou coller</strong>, <strong>Scanner un document</strong>, <strong>Texte d’une photo</strong>, <strong>Importer un fichier</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Votre texte</strong></td>
+            <td>La saisie ou la relecture du texte, avec un titre facultatif et la langue du texte. Le bouton <strong>Créer le quiz</strong> lance le quiz.</td>
+            </tr>
+            <tr>
+            <td>L'écran d'un texte</td>
+            <td>Il porte le titre du texte. Il montre le début du texte (<strong>Lire le texte</strong> pour tout lire) et la liste de ses <strong>Quiz</strong>. En bas : <strong>Nouveau quiz</strong> ou <strong>Un autre quiz</strong>.</td>
+            </tr>
+            <tr>
+            <td>Le quiz</td>
+            <td>Une question à la fois (<em>Question 1 sur 10</em>), puis l'écran <strong>Résultat</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Réglages</strong></td>
+            <td>Langue, thème, nombre de questions, quiz IA, et <strong>À propos</strong>.</td>
+            </tr>
+            </table></div>
+            <div class="attention"><p><strong>Bon à savoir</strong> : vos textes, vos quiz et vos résultats restent <strong>sur votre téléphone</strong>. Il n'y a pas de compte à créer.</p></div>
+            <hr/>
+            <h2 id="premier-lancement">Premier lancement</h2>
+            <p><strong>Installer l'application</strong></p>
+            <ol>
+            <li>Sur votre téléphone, ouvrez la page de téléchargement : https://iyf.ebng.world/apps/comprendre
+            </li>
+            <li>Touchez <strong>Télécharger</strong>.
+            </li>
+            <li>Ouvrez le fichier téléchargé pour l'installer.
+            </li>
+            <li>Si Android vous le demande, autorisez l'installation depuis cette source, puis revenez à l'installation.
+            </li></ol>
+            <p><strong>À la première ouverture</strong></p>
+            <p>Comprendre ne pose aucune question au démarrage. Vous arrivez directement sur l'écran d'accueil, qui affiche <strong>Comprenez ce que vous lisez</strong> et les quatre façons d'apporter un texte :</p>
+            <ul>
+            <li><strong>Écrire ou coller</strong> : <em>Saisissez le texte, ou collez-le</em> ;
+            </li>
+            <li><strong>Scanner un document</strong> : <em>Une ou plusieurs pages, avec l’appareil photo</em> ;
+            </li>
+            <li><strong>Texte d’une photo</strong> : <em>Une image de votre galerie</em> ;
+            </li>
+            <li><strong>Importer un fichier</strong> : <em>PDF, Word, PowerPoint, OpenDocument, EPUB, texte…</em>
+            </li></ul>
+            <p>L'application s'affiche en français, ou en anglais si votre téléphone est réglé en anglais. Vous pouvez changer cela dans les <strong>Réglages</strong>.</p>
+            <p>La seule question vient plus tard, au <strong>premier quiz</strong> : Comprendre vous demande si vous voulez utiliser l'IA (voir l'<a href="#exemple-1--coller-un-texte-et-faire-son-premier-quiz">exemple 1</a>).</p>
+            <hr/>
+            <h2 id="exemple-1--coller-un-texte-et-faire-son-premier-quiz">Exemple 1 : coller un texte et faire son premier quiz</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Aya est en classe de 3e. Son professeur a envoyé la leçon d'histoire sur WhatsApp. Elle veut vérifier qu'elle l'a bien comprise avant le devoir.</p></div>
+            <p><strong>Étape 1 : apporter le texte</strong></p>
+            <ol>
+            <li>Dans WhatsApp, Aya copie le message de la leçon.
+            </li>
+            <li>Elle ouvre Comprendre et touche <strong>Écrire ou coller</strong>. S'il y a déjà des textes, elle touche d'abord <strong>Nouveau texte</strong>.
+            </li>
+            <li>L'écran <strong>Votre texte</strong> s'ouvre. Elle touche l'icône <strong>Coller</strong>, en haut à droite : la leçon apparaît dans le champ <strong>Texte</strong>.
+            </li>
+            <li>Elle peut écrire un titre dans <strong>Titre (facultatif)</strong>, par exemple <em>Les indépendances africaines</em>. Si elle le laisse vide, Comprendre prend le début de la première phrase comme titre.
+            </li>
+            <li>Sous le texte, le nombre de caractères s'affiche. La <strong>Langue du texte</strong> (<strong>Français</strong> ou <strong>Anglais</strong>) est choisie toute seule ; elle peut la corriger d'un geste.
+            </li>
+            <li>Elle touche <strong>Créer le quiz</strong>.
+            </li></ol>
+            <div class="attention"><p><strong>Bon à savoir</strong> : il faut au moins <strong>150 caractères</strong>, soit deux ou trois phrases. Sinon, l'application affiche : <em>« Ajoutez un peu de texte : 150 caractères au moins. »</em></p></div>
+            <p><strong>Étape 2 : choisir avec ou sans IA (une seule fois)</strong></p>
+            <p>Au tout premier quiz, la fenêtre <strong>Utiliser l’IA ?</strong> s'ouvre. Elle explique qu'avec Internet, une IA peut poser des questions plus riches, que le texte est envoyé seulement pour créer le quiz et qu'il n'est pas conservé. Quand le service est joignable, elle indique aussi le nombre de quiz gratuits, par exemple <strong>5 quiz IA gratuits par jour</strong>.</p>
+            <ul>
+            <li>Touchez <strong>Utiliser l’IA</strong> pour accepter ;
+            </li>
+            <li>ou <strong>Rester hors ligne</strong> pour que tout reste sur le téléphone.
+            </li></ul>
+            <p>Ce choix est retenu. Vous pouvez le changer à tout moment dans <strong>Réglages → Quiz IA</strong> (voir <a href="#les-réglages">Les réglages</a>).</p>
+            <p><strong>Étape 3 : patienter quelques instants</strong></p>
+            <p>La fenêtre <strong>Création du quiz…</strong> s'affiche :</p>
+            <ul>
+            <li>sans IA, avec le message <em>« Préparation des questions à partir du texte… »</em> : c'est très rapide ;
+            </li>
+            <li>avec l'IA, avec le message <em>« L’IA lit votre texte et prépare des questions de compréhension. Cela peut prendre jusqu’à une minute. »</em>
+            </li></ul>
+            <p>Pendant l'attente de l'IA, le bouton <strong>Créer hors ligne maintenant</strong> permet de ne pas attendre : le quiz est alors créé tout de suite sur le téléphone.</p>
+            <p>Le quiz s'ouvre ensuite. Pour y répondre, voir l'<a href="#exemple-5--répondre-aux-questions-et-comprendre-ses-erreurs">exemple 5</a>.</p>
+            <div class="attention"><p><strong>Astuce</strong> : quand vous revenez en arrière avec un texte non enregistré, Comprendre demande <strong>Abandonner ce texte ?</strong> Touchez <strong>Annuler</strong> pour continuer à écrire, ou <strong>Abandonner</strong> pour tout effacer.</p></div>
+            <hr/>
+            <h2 id="exemple-2--scanner-les-pages-dun-livre">Exemple 2 : scanner les pages d'un livre</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Kouamé est étudiant. Il doit comprendre un chapitre de 3 pages dans un livre de la bibliothèque, qu'il ne peut pas emporter.</p></div>
+            <ol>
+            <li>Touchez <strong>Nouveau texte</strong>, puis <strong>Scanner un document</strong>.
+            </li>
+            <li>L'appareil photo s'ouvre. Suivez les indications à l'écran pour photographier la première page, puis les suivantes. Vous pouvez scanner jusqu'à 20 pages.
+            </li>
+            <li>Validez la numérisation. Comprendre affiche <em>« Reconnaissance du texte… »</em>, puis <em>« Lecture : page 2 sur 3 »</em> et ainsi de suite.
+            </li>
+            <li>L'écran <strong>Votre texte</strong> s'ouvre avec le texte reconnu. Un encadré vous rappelle : <em>« Vérifiez le texte : vous pouvez le corriger ou en retirer des parties avant de créer le quiz. »</em>
+            </li>
+            <li>Relisez. Corrigez les mots mal lus, et retirez ce qui ne sert pas : numéros de page, titres répétés en haut des pages…
+            </li>
+            <li>Touchez <strong>Créer le quiz</strong>.
+            </li></ol>
+            <div class="attention"><p><strong>Astuce</strong> : pour une bonne lecture, posez la page bien à plat, dans un endroit bien éclairé, et tenez le téléphone au-dessus sans bouger.</p></div>
+            <div class="attention"><p><strong>Bon à savoir</strong> : la première fois, le téléphone peut avoir besoin de télécharger le scanner de documents (un module des services Google). Si le scanner ne peut pas s'ouvrir, l'application affiche : <em>« Le scanner de documents n’est pas disponible sur cet appareil. »</em> Utilisez alors <strong>Texte d’une photo</strong> (exemple 3).</p></div>
+            <hr/>
+            <h2 id="exemple-3--lire-le-texte-dune-photo">Exemple 3 : lire le texte d'une photo</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Madame Koné a reçu sur WhatsApp la photo d'une page du cahier de son fils. Elle veut l'aider à réviser.</p></div>
+            <ol>
+            <li>Enregistrez d'abord la photo dans la galerie du téléphone.
+            </li>
+            <li>Dans Comprendre, touchez <strong>Nouveau texte</strong>, puis <strong>Texte d’une photo</strong>.
+            </li>
+            <li>Choisissez la photo dans votre galerie. Comprendre affiche <em>« Reconnaissance du texte… »</em>.
+            </li>
+            <li>L'écran <strong>Votre texte</strong> s'ouvre avec le texte lu sur la photo. Relisez-le et corrigez-le si besoin.
+            </li>
+            <li>Touchez <strong>Créer le quiz</strong>.
+            </li></ol>
+            <div class="attention"><p><strong>Bon à savoir</strong> : la reconnaissance marche mieux avec un texte imprimé ou une écriture bien lisible. Si rien n'est reconnu, l'application affiche <em>« Aucun texte n’a été reconnu sur cette image. »</em> En cas d'échec, elle conseille : <em>« Essayez une photo plus nette et bien éclairée. »</em></p></div>
+            <hr/>
+            <h2 id="exemple-4--importer-un-fichier-pdf-ou-word">Exemple 4 : importer un fichier PDF ou Word</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Yao travaille dans une entreprise. Il a reçu une note de service en PDF et veut être sûr d'en avoir retenu l'essentiel.</p></div>
+            <ol>
+            <li>Touchez <strong>Nouveau texte</strong>, puis <strong>Importer un fichier</strong>.
+            </li>
+            <li>Choisissez le fichier sur votre téléphone (par exemple dans <em>Téléchargements</em>).
+            </li>
+            <li>Comprendre affiche <em>« Lecture du fichier… »</em>, ou <em>« Lecture : page 1 sur 4 »</em> pour un PDF.
+            </li>
+            <li>L'écran <strong>Votre texte</strong> s'ouvre. Le titre est déjà rempli avec le nom du fichier. Relisez le texte.
+            </li>
+            <li>Touchez <strong>Créer le quiz</strong>.
+            </li></ol>
+            <p>Formats acceptés : PDF (même un PDF scanné), Word (.docx), PowerPoint (.pptx), Excel (.xlsx, texte des cellules), OpenDocument (.odt, .odp), EPUB, RTF, HTML, texte et Markdown.</p>
+            <p>Ce qui peut bloquer :</p>
+            <div class="tableau"><table>
+            <tr>
+            <th>Message</th>
+            <th>Que faire</th>
+            </tr>
+            <tr>
+            <td><em>Ancien format Office (.doc, .ppt) : enregistrez-le en .docx, .pptx ou PDF, puis importez-le.</em></td>
+            <td>Ouvrez le fichier dans un traitement de texte et enregistrez-le dans un format récent.</td>
+            </tr>
+            <tr>
+            <td><em>Ce fichier est protégé par un mot de passe.</em></td>
+            <td>Retirez le mot de passe, ou demandez une version sans mot de passe.</td>
+            </tr>
+            <tr>
+            <td><em>Ce fichier est trop volumineux (40 Mo au plus).</em></td>
+            <td>Importez seulement la partie utile du document.</td>
+            </tr>
+            <tr>
+            <td><em>Aucun texte n’a été trouvé dans ce document.</em></td>
+            <td>Le fichier ne contient pas de texte lisible. Essayez <strong>Scanner un document</strong>.</td>
+            </tr>
+            <tr>
+            <td><em>Ce fichier est illisible ou endommagé.</em></td>
+            <td>Demandez une nouvelle copie du fichier.</td>
+            </tr>
+            <tr>
+            <td><em>Ce type de fichier n’est pas pris en charge.</em></td>
+            <td>Utilisez un des formats de la liste ci-dessus.</td>
+            </tr>
+            </table></div>
+            <hr/>
+            <h2 id="exemple-5--répondre-aux-questions-et-comprendre-ses-erreurs">Exemple 5 : répondre aux questions et comprendre ses erreurs</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Aya a créé son quiz (exemple 1). Elle répond maintenant aux questions.</p></div>
+            <p><strong>Pendant le quiz</strong></p>
+            <ol>
+            <li>En haut, vous voyez <em>Question 1 sur 10</em> et une barre de progression.
+            </li>
+            <li>Une petite étiquette indique ce que la question vérifie : <strong>Idée principale</strong>, <strong>Détail</strong>, <strong>Vocabulaire</strong>, <strong>Déduction</strong>, <strong>Structure</strong> ou <strong>Cause et effet</strong>.
+            </li>
+            <li>Touchez la réponse de votre choix. Pour certaines questions, il faut choisir <strong>Vrai</strong> ou <strong>Faux</strong>.
+            </li>
+            <li>La correction s'affiche tout de suite :
+            <ul>
+            <li><strong>Bonne réponse</strong>, ou <strong>Pas tout à fait</strong> si vous vous êtes trompé ; la bonne réponse est marquée en vert ;
+            </li>
+            <li>une explication ;
+            </li>
+            <li>l'encadré <strong>Dans le texte</strong>, avec le passage qui justifie la réponse.
+            </li></ul>
+            </li>
+            <li>Touchez <strong>Voir dans le texte</strong> : le texte complet s'ouvre, avec ce passage <strong>surligné</strong>. Revenez en arrière pour continuer.
+            </li>
+            <li>Touchez <strong>Suivante</strong>. À la dernière question, touchez <strong>Voir le résultat</strong>.
+            </li></ol>
+            <div class="attention"><p><strong>Bon à savoir</strong> : si vous quittez un quiz en cours, Comprendre demande <strong>Quitter le quiz ?</strong> car <em>« Vos réponses à ce quiz ne seront pas enregistrées. »</em> Touchez <strong>Annuler</strong> pour continuer, ou <strong>Quitter</strong>.</p></div>
+            <p><strong>L'écran Résultat</strong></p>
+            <ol>
+            <li>Votre score s'affiche, par exemple <em>7 sur 10</em>, avec un message :
+            <ul>
+            <li><em>« Excellent : vous avez bien compris ce texte. »</em> ;
+            </li>
+            <li><em>« Bien : relisez les passages des questions manquées. »</em> ;
+            </li>
+            <li>ou <em>« Relisez le texte tranquillement, puis réessayez : chaque explication renvoie au passage. »</em>
+            </li></ul>
+            </li>
+            <li>Pour un quiz IA, l'encadré <strong>En bref</strong> donne un court résumé du texte.
+            </li>
+            <li>Sous <strong>Revoir les réponses</strong>, chaque question est rappelée. Touchez-en une pour voir <em>Votre réponse</em>, <em>La bonne réponse</em>, l'explication et le passage du texte.
+            </li></ol>
+            <hr/>
+            <h2 id="exemple-6--refaire-un-quiz-ou-en-créer-un-autre">Exemple 6 : refaire un quiz ou en créer un autre</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Kouamé a eu 5 sur 10. Il relit le chapitre et veut s'entraîner encore.</p></div>
+            <p><strong>Depuis l'écran Résultat</strong></p>
+            <ul>
+            <li><strong>Refaire ce quiz</strong> : les mêmes questions, depuis le début.
+            </li>
+            <li><strong>Un autre quiz</strong> : un nouveau quiz sur le même texte, avec d'autres questions.
+            </li></ul>
+            <p><strong>Depuis l'écran du texte</strong></p>
+            <ol>
+            <li>Sur l'écran <strong>Mes textes</strong>, touchez le texte.
+            </li>
+            <li>Sous <strong>Quiz</strong>, chaque quiz est listé : <em>Quiz hors ligne · 10 questions</em> ou <em>Quiz IA · 10 questions</em>, avec <em>Pas encore fait</em> ou <em>Meilleur score : 7/10</em>, et la date.
+            </li>
+            <li>Touchez un quiz pour le refaire.
+            </li>
+            <li>Touchez <strong>Un autre quiz</strong>, en bas, pour en créer un nouveau.
+            </li>
+            <li>Pour supprimer un quiz, touchez l'icône 🗑 à sa droite, puis <strong>Supprimer</strong>.
+            </li></ol>
+            <div class="attention"><p><strong>Astuce</strong> : si vous trouvez les quiz trop longs ou trop courts, choisissez <strong>5</strong>, <strong>10</strong> ou <strong>15</strong> questions dans <strong>Réglages → Questions par quiz</strong>.</p></div>
+            <hr/>
+            <h2 id="exemple-7--corriger-partager-ou-supprimer-un-texte">Exemple 7 : corriger, partager ou supprimer un texte</h2>
+            <div class="exemple"><p><strong>Situation</strong> : Yao a remarqué une faute dans le texte importé. Il veut aussi l'envoyer à un collègue.</p></div>
+            <p>Ouvrez le texte depuis l'écran <strong>Mes textes</strong>, puis :</p>
+            <div class="tableau"><table>
+            <tr>
+            <th>Je veux…</th>
+            <th>Comment faire</th>
+            </tr>
+            <tr>
+            <td>Lire tout le texte</td>
+            <td>Touchez le début du texte, ou <strong>Lire le texte</strong>.</td>
+            </tr>
+            <tr>
+            <td>Corriger le texte ou son titre</td>
+            <td>Touchez l'icône ✎ (<strong>Modifier</strong>) en haut, faites vos corrections, puis touchez <strong>Enregistrer</strong>.</td>
+            </tr>
+            <tr>
+            <td>Envoyer le texte à quelqu'un</td>
+            <td>Touchez le menu <strong>⋮</strong> en haut à droite, puis <strong>Partager</strong>. Choisissez ensuite WhatsApp, un e-mail…</td>
+            </tr>
+            <tr>
+            <td>Supprimer le texte</td>
+            <td>Touchez <strong>⋮ → Supprimer</strong>. Comprendre demande <strong>Supprimer ce texte ?</strong> : <em>« Le texte et ses quiz seront supprimés de ce téléphone. »</em> Touchez <strong>Supprimer</strong> pour confirmer.</td>
+            </tr>
+            </table></div>
+            <div class="attention"><p><strong>Bon à savoir</strong> : un texte supprimé ne peut pas être récupéré. Ses quiz et ses scores sont supprimés aussi.</p></div>
+            <hr/>
+            <h2 id="quiz-hors-ligne-et-quiz-ia">Quiz hors ligne et quiz IA</h2>
+            <p>Comprendre sait créer deux sortes de quiz. Dans la liste des quiz d'un texte, chacun porte son nom : <strong>Quiz hors ligne</strong> ou <strong>Quiz IA</strong>.</p>
+            <div class="tableau"><table>
+            <tr>
+            <th></th>
+            <th>Quiz hors ligne</th>
+            <th>Quiz IA</th>
+            </tr>
+            <tr>
+            <td>Où il est créé</td>
+            <td>Sur votre téléphone</td>
+            <td>Par une IA (Claude, d'Anthropic), via le serveur de Comprendre</td>
+            </tr>
+            <tr>
+            <td>Internet</td>
+            <td>Pas besoin</td>
+            <td>Nécessaire</td>
+            </tr>
+            <tr>
+            <td>Limite</td>
+            <td>Aucune</td>
+            <td>Quelques quiz gratuits par jour et par téléphone (5 en principe)</td>
+            </tr>
+            <tr>
+            <td>Questions</td>
+            <td>Tirées directement des phrases du texte : thème, mot manquant, chiffres et dates, vrai ou faux, ordre des idées</td>
+            <td>Plus riches : idée principale, causes et conséquences, sens des mots, déductions, avec un résumé <strong>En bref</strong></td>
+            </tr>
+            <tr>
+            <td>Votre texte</td>
+            <td>Rien n'est envoyé</td>
+            <td>Envoyé pour créer le quiz, puis oublié</td>
+            </tr>
+            </table></div>
+            <p><strong>Le quiz hors ligne est toujours là.</strong> Il marche partout, même sans réseau ni crédit. Ses questions sont justes, car tout vient du texte lui-même. Mais elles portent surtout sur ce qui est écrit, mot pour mot.</p>
+            <p><strong>Le quiz IA aide à aller plus loin.</strong> Il pose des questions qui demandent de réfléchir : pourquoi, quelle conséquence, que veut dire ce mot. Chaque passage cité par l'IA est vérifié dans votre texte ; une question qui ne s'appuie pas vraiment sur le texte est écartée.</p>
+            <p><strong>Vous obtenez toujours un quiz.</strong> Si l'IA est activée mais ne peut pas répondre, Comprendre crée le quiz hors ligne et vous dit pourquoi, en bas de l'écran, par exemple :</p>
+            <ul>
+            <li><em>Quiz créé hors ligne : pas de connexion au service IA.</em>
+            </li>
+            <li><em>Quiz créé hors ligne : quota IA du jour atteint.</em>
+            </li>
+            <li><em>Quiz créé hors ligne : texte trop long pour l’IA (…caractères au plus).</em>
+            </li>
+            <li><em>Quiz créé hors ligne : le service IA est très demandé, réessayez plus tard.</em>
+            </li>
+            <li><em>Quiz créé hors ligne : le service IA est momentanément indisponible.</em>
+            </li>
+            <li><em>Quiz créé hors ligne : trop de demandes, réessayez dans 10 min.</em>
+            </li></ul>
+            <p><strong>La limite du jour.</strong> Le nombre de quiz IA gratuits est indiqué dans la fenêtre <strong>Utiliser l’IA ?</strong> (par exemple <strong>5 quiz IA gratuits par jour</strong>). Pour savoir combien il vous en reste, ouvrez <strong>Réglages → Quiz IA</strong> : vous lisez par exemple <em>Encore 3 quiz IA aujourd’hui</em>, ou <em>Plus de quiz IA aujourd’hui</em>. Quand la limite est atteinte, vos quiz sont créés hors ligne jusqu'au lendemain.</p>
+            <div class="attention"><p><strong>Bon à savoir</strong> : pour un texte très court (moins de 200 caractères environ), le quiz est toujours créé hors ligne. Les textes très longs (plus de 30 000 caractères environ) ne sont pas envoyés à l'IA : retirez les parties inutiles, ou découpez le texte en plusieurs textes.</p></div>
+            <div class="attention"><p><strong>Astuce</strong> : gardez vos quiz IA pour les textes difficiles, par exemple une leçon à bien comprendre. Pour une simple révision, le quiz hors ligne suffit souvent.</p></div>
+            <hr/>
+            <h2 id="les-réglages">Les réglages</h2>
+            <p>Touchez l'icône ⚙ en haut de l'écran <strong>Mes textes</strong>.</p>
+            <div class="tableau"><table>
+            <tr>
+            <th>Réglage</th>
+            <th>Choix</th>
+            </tr>
+            <tr>
+            <td><strong>Langue de l’application</strong></td>
+            <td><strong>Langue du téléphone</strong>, <strong>Français</strong> ou <strong>English</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Thème</strong></td>
+            <td><strong>Automatique</strong>, <strong>Clair</strong> ou <strong>Sombre</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Questions par quiz</strong></td>
+            <td><strong>5</strong>, <strong>10</strong> ou <strong>15</strong>.</td>
+            </tr>
+            <tr>
+            <td><strong>Quiz IA</strong></td>
+            <td>L'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>. Quand il est activé, la ligne en dessous indique les quiz IA restants aujourd'hui ; l'icône ↻ met ce nombre à jour. Sans connexion, elle affiche <em>Quota IA : connexion nécessaire</em>.</td>
+            </tr>
+            <tr>
+            <td><strong>À propos</strong></td>
+            <td>Une présentation de Comprendre, la <strong>Confidentialité</strong>, et le numéro de version.</td>
+            </tr>
+            </table></div>
+            <hr/>
+            <h2 id="questions-fréquentes">Questions fréquentes</h2>
+            <p><strong>Faut-il Internet ?</strong><br/>Non. Saisir un texte, le scanner, l'importer et créer un quiz hors ligne fonctionnent sans connexion. Internet sert seulement pour les quiz IA, le partage d'un texte, et le téléchargement de l'application.</p>
+            <p><strong>Faut-il créer un compte ?</strong><br/>Non. Comprendre ne demande ni compte, ni numéro de téléphone, ni adresse e-mail.</p>
+            <p><strong>Que devient mon texte quand j'utilise l'IA ?</strong><br/>Il est envoyé de façon chiffrée au serveur de Comprendre puis à l'IA, seulement pour créer le quiz. Il n'est pas conservé. Un identifiant aléatoire, sans lien avec vous, sert seulement à compter vos quiz gratuits. Vos textes et vos résultats restent sur votre téléphone.</p>
+            <p><strong>Combien de quiz IA puis-je faire par jour ?</strong><br/>Le nombre est affiché dans la fenêtre <strong>Utiliser l’IA ?</strong> et dans <strong>Réglages → Quiz IA</strong> (5 par jour en principe). Seuls les quiz IA réussis sont comptés. Au-delà, vos quiz sont créés hors ligne, sans limite.</p>
+            <p><strong>Je n'ai plus de quiz IA aujourd'hui. Que se passe-t-il ?</strong><br/>Rien de grave : vos quiz sont créés hors ligne, et un message vous le signale (<em>« quota IA du jour atteint »</em>). Les quiz IA reviennent le lendemain.</p>
+            <p><strong>Comment activer ou désactiver l'IA après le premier choix ?</strong><br/>Ouvrez <strong>Réglages → Quiz IA</strong> et touchez l'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>.</p>
+            <p><strong>Le quiz IA est trop long à venir. Que faire ?</strong><br/>Pendant l'attente, touchez <strong>Créer hors ligne maintenant</strong> : le quiz est créé tout de suite sur le téléphone.</p>
+            <p><strong>Pourquoi mon quiz a-t-il moins de questions que prévu ?</strong><br/>Quand un texte est court, il n'y a pas toujours assez de matière pour toutes les questions. Si le texte est vraiment trop court, l'application affiche : <em>« Ce texte est trop court ou trop pauvre pour un quiz. Ajoutez quelques phrases complètes. »</em></p>
+            <p><strong>Le texte scanné contient des erreurs. Est-ce grave ?</strong><br/>Corrigez-les dans l'écran <strong>Votre texte</strong> avant de toucher <strong>Créer le quiz</strong>. Plus le texte est propre, meilleures sont les questions. Vous pouvez aussi corriger plus tard avec l'icône ✎ (<strong>Modifier</strong>).</p>
+            <p><strong>Puis-je travailler un texte en anglais ?</strong><br/>Oui. Choisissez <strong>Anglais</strong> dans <strong>Langue du texte</strong> si l'application ne l'a pas reconnu toute seule. Les questions seront alors en anglais.</p>
+            <p><strong>Comment mettre à jour l'application ?</strong><br/>Quand une nouvelle version est publiée, un bandeau dans l'application vous le signale ; touchez-le pour la télécharger depuis la page de téléchargement.</p>
+            <p><strong>Comment passer l'application en anglais ?</strong><br/><strong>Réglages → Langue de l’application → English</strong>.</p>
+        </t>
+    </template>
+
+    <template id="report_user_guide">
+        <t t-call="web.html_container">
+            <!-- `docs`, et non `doc` : le rendu expose le RECORDSET. -->
+            <t t-foreach="docs" t-as="doc">
+            <!-- `web.basic_layout` pose le `div.article` que l'impression
+                 cherche. Sans lui, Odoo transmet le corps brut à wkhtmltopdf,
+                 sans déclaration d'encodage, et chaque accent sort abîmé. -->
+            <t t-call="web.basic_layout">
+            <div class="page">
+                <style>
+                    .page { font-family: Helvetica, Arial, sans-serif;
+                            color: #1a1a1a; font-size: 11pt; line-height: 1.5; }
+                    .page h1 { font-size: 20pt; margin: 0 0 4px; }
+                    .page h2 { font-size: 13pt; margin: 20px 0 8px;
+                               border-bottom: 1px solid #ddd; padding-bottom: 4px;
+                               page-break-after: avoid; }
+                    .page h3 { font-size: 11pt; margin: 14px 0 6px; color: #0E5E6F;
+                               page-break-after: avoid; }
+                    .page table { width: 100%; border-collapse: collapse;
+                                  margin: 0 0 14px; font-size: 9.5pt; }
+                    .page tr { page-break-inside: avoid; }
+                    .page th, .page td { border: 1px solid #ddd; padding: 6px 8px;
+                                         text-align: left; vertical-align: top; }
+                    .page th { background: #f5f5f5; }
+                    .page .attention { border-left: 3px solid #0E5E6F;
+                                       background: #fafafa; padding: 10px 14px;
+                                       margin: 0 0 14px; page-break-inside: avoid; }
+                    .page .exemple { border-left: 3px solid #0E5E6F;
+                                     background: #f4f7f6; padding: 10px 14px;
+                                     margin: 0 0 14px; font-style: italic;
+                                     page-break-inside: avoid; }
+                    .page .attention p, .page .exemple p { margin: 0; }
+                    .page code { background: #f0f0f0; padding: 1px 4px; font-size: 9.5pt; }
+                    .page .sommaire a { color: #444; text-decoration: none; }
+                    .page .capture { text-align: center; margin: 0 0 16px;
+                                     page-break-inside: avoid; }
+                    .page .capture img { max-width: 62mm; border: 1px solid #ddd;
+                                         border-radius: 4px; }
+                    .page hr { border: 0; border-top: 1px solid #eee; margin: 18px 0; }
+                    .page .titre { border-bottom: 2px solid #0E5E6F;
+                                   padding-bottom: 10px; margin-bottom: 18px; }
+                    .page .pied { margin-top: 26px; padding-top: 10px;
+                                  border-top: 1px solid #ddd; font-size: 9pt;
+                                  color: #666; }
+                </style>
+                <div class="titre">
+                    <h1>Guide d'utilisation</h1>
+                    <div t-esc="doc.name"/>
+                </div>
+                <!-- Captures INCORPORÉES : wkhtmltopdf rappellerait sinon le
+                     serveur, qui ne peut pas répondre pendant ce rendu. -->
+                <t t-set="guide_image_mode" t-value="'data'"/>
+                <t t-set="app" t-value="doc"/>
+                <t t-call="comprendre_backend.user_guide_content"/>
+                <div class="pied" t-if="doc.support_note">
+                    <t t-esc="doc.support_note"/>
+                </div>
+            </div>
+            </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Sur `mobile.app` : le socle refuse d'imprimer un guide déclaré sur un
+         autre modèle (il serait rendu sur le mauvais enregistrement). -->
+    <record id="action_report_user_guide" model="ir.actions.report">
+        <field name="name">Guide utilisateur — Comprendre</field>
+        <field name="model">mobile.app</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">comprendre_backend.report_user_guide</field>
+        <field name="report_file">comprendre_backend.report_user_guide</field>
+        <field name="print_report_name">'Guide - %s' % (object.name)</field>
+        <field name="binding_model_id" eval="False"/>
+    </record>
+
+</odoo>
