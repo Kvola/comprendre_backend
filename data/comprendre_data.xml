@@ -14,7 +14,20 @@
             <field name="key">comprendre.model</field><field name="value">claude-opus-5-5</field>
         </record>
     </data>
+    <data noupdate="1">
+        <record id="param_rejected_cap" model="ir.config_parameter">
+            <field name="key">comprendre.daily_rejected_cap</field><field name="value">3</field>
+        </record>
+    </data>
     <data>
+        <record id="cron_gc_pending" model="ir.cron">
+            <field name="name">Comprendre : libérer les demandes IA interrompues</field>
+            <field name="model_id" ref="model_comprendre_ai_request"/>
+            <field name="state">code</field>
+            <field name="code">model._gc_pending()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+        </record>
         <record id="mobile_app_comprendre" model="mobile.app">
             <field name="name">Comprendre</field>
             <field name="slug">comprendre</field>

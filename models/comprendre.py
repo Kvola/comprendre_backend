@@ -9,6 +9,7 @@ import time
 import unicodedata
 
 from odoo import _, api, fields, models
+from odoo.modules import module as odoo_module
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -16,13 +17,46 @@ _logger = logging.getLogger(__name__)
 DEFAULT_MODEL = 'claude-opus-5-5'
 MIN_CHARS = 200
 
+# Délais : l'application abandonne au bout de 240 s (200 s avant la 1.2.0). Un essai
+# dure au plus 100 s et n'est répété qu'une fois : la réponse arrive toujours avant
+# que l'application n'ait renoncé (sinon le quota serait consommé pour rien).
+API_TIMEOUT = 100.0
+API_RETRIES = 1
+
+# Langues acceptées (le moteur hors ligne de l'application ne gère que fr et en).
+LANGUAGES = {'fr': 'French', 'en': 'English', 'es': 'Spanish', 'pt': 'Portuguese', 'de': 'German', 'it': 'Italian'}
+
+# Prix publics en dollars par million de jetons (entrée, sortie), pour estimer le coût
+# de chaque appel. Le modèle réellement utilisé (réponse de l'API) fait foi : en cas
+# de repli automatique sur un autre modèle, c'est son prix qui s'applique.
+PRICES = {
+    'claude-opus-5-5': (4.0, 20.0),
+    'claude-opus-5': (5.0, 25.0),
+    'claude-opus-4-8': (5.0, 25.0),
+    'claude-opus-4-7': (5.0, 25.0),
+    'claude-sonnet-5-5': (2.0, 10.0),
+    'claude-sonnet-5': (2.0, 10.0),
+    'claude-haiku-5-5': (0.10, 0.50),
+    'claude-fable-5-2': (8.0, 40.0),
+}
+
+
+def price_of(model):
+    """(entrée, sortie) en $/Mjetons ; le préfixe le plus long l'emporte (identifiants datés) ; None si inconnu."""
+    model = model or ''
+    best = max((k for k in PRICES if model.startswith(k)), key=len, default=None)
+    return PRICES.get(best)
+
 
 class Refusal(UserError):
     """Refus avec un code machine (``reason``) : l'application affiche son propre message traduit."""
 
-    def __init__(self, message, reason):
+    def __init__(self, message, reason, usage=None):
         super().__init__(message)
         self.reason = reason
+        # (jetons entrée, jetons sortie, modèle) quand l'appel a eu lieu et a été facturé.
+        self.usage = usage
+
 
 MIN_VALID_QUESTIONS = 3
 
@@ -75,8 +109,13 @@ def normalize(text):
     """Forme de comparaison des citations : casse, accents, apostrophes et ponctuation ignorés."""
     text = unicodedata.normalize('NFKD', (text or '').lower())
     text = ''.join(c for c in text if not unicodedata.combining(c))
-    text = text.replace('œ', 'oe').replace('æ', 'ae')
+    text = text.replace('œ', 'oe').replace('æ', 'ae').replace('ß', 'ss')
     return re.sub(r'[^a-z0-9]+', ' ', text).strip()
+
+
+def _testing():
+    """Vrai pendant les tests d'Odoo (leur transaction ne doit jamais être validée)."""
+    return bool(odoo_module.current_test)
 
 
 class ComprendreDevice(models.Model):
@@ -114,7 +153,14 @@ class ComprendreDevice(models.Model):
 
 
 class ComprendreAiRequest(models.Model):
-    """Journal des demandes de quiz IA : sert au quota et au suivi du coût. Le texte n'est pas conservé."""
+    """Journal des demandes de quiz IA : sert au quota et au suivi du coût. Le texte n'est pas conservé.
+
+    États :
+    - ``pending`` : réservée, appel à Claude en cours (compte dans le quota) ;
+    - ``done`` : quiz livré (compte dans le quota) ;
+    - ``rejected`` : Claude a répondu (appel facturé) mais rien d'utilisable — plafonné par jour ;
+    - ``failed`` : l'appel n'a pas abouti (service indisponible, réseau…) — rien de facturé.
+    """
     _name = 'comprendre.ai.request'
     _description = "Demande de quiz IA"
     _order = 'id desc'
@@ -122,17 +168,26 @@ class ComprendreAiRequest(models.Model):
     device_id = fields.Many2one('comprendre.device', required=True, index=True, ondelete='cascade')
     ip_hash = fields.Char("IP (empreinte)", index=True)
     day = fields.Date("Jour", required=True, index=True, default=fields.Date.context_today)
-    state = fields.Selection([('done', "Réussie"), ('failed', "Échouée"), ('rejected', "Écartée")],
+    state = fields.Selection([('pending', "En cours"), ('done', "Réussie"), ('failed', "Échouée"),
+                              ('rejected', "Écartée")],
                              required=True, default='failed', index=True)
     lang = fields.Char("Langue")
     chars = fields.Integer("Caractères")
     model = fields.Char("Modèle")
     input_tokens = fields.Integer("Jetons en entrée")
     output_tokens = fields.Integer("Jetons en sortie")
+    cost = fields.Float("Coût estimé ($)", digits=(12, 4), compute='_compute_cost', store=True, aggregator='sum',
+                        help="Jetons × prix public du modèle réellement utilisé (dollars US).")
     questions = fields.Integer("Questions gardées")
     dropped = fields.Integer("Questions écartées")
-    duration_ms = fields.Integer("Durée (ms)")
+    duration_ms = fields.Integer("Durée (ms)", aggregator='avg')
     error = fields.Char("Erreur")
+
+    @api.depends('model', 'input_tokens', 'output_tokens')
+    def _compute_cost(self):
+        for r in self:
+            price = price_of(r.model)
+            r.cost = (r.input_tokens * price[0] + r.output_tokens * price[1]) / 1e6 if price else 0.0
 
     # ------------------------------------------------------------------ #
     @api.model
@@ -147,18 +202,38 @@ class ComprendreAiRequest(models.Model):
             return default
 
     @api.model
+    def _count_today(self, domain, states):
+        return self.search_count(domain + [('day', '=', fields.Date.context_today(self)), ('state', 'in', states)])
+
+    @api.model
     def _remaining(self, device):
-        """Quiz IA restants aujourd'hui pour cet appareil."""
+        """Quiz IA restants aujourd'hui pour cet appareil (les demandes en cours comptent)."""
         quota = self._int_param('comprendre.daily_quota', 5)
-        used = self.search_count([('device_id', '=', device.id), ('day', '=', fields.Date.context_today(self)),
-                                  ('state', '=', 'done')])
-        return max(0, quota - used)
+        return max(0, quota - self._count_today([('device_id', '=', device.id)], ['done', 'pending']))
+
+    @api.model
+    def _failures_exhausted(self, device):
+        """Trop d'appels facturés sans résultat aujourd'hui (textes que l'IA ne sait pas traiter)."""
+        cap = self._int_param('comprendre.daily_rejected_cap', 3)
+        return self._count_today([('device_id', '=', device.id)], ['rejected']) >= cap
 
     @api.model
     def _ip_exhausted(self, ip_hash):
         cap = self._int_param('comprendre.ip_daily_cap', 40)
-        return bool(ip_hash) and self.search_count(
-            [('ip_hash', '=', ip_hash), ('day', '=', fields.Date.context_today(self)), ('state', '=', 'done')]) >= cap
+        return bool(ip_hash) and self._count_today([('ip_hash', '=', ip_hash)], ['done', 'pending', 'rejected']) >= cap
+
+    @api.model
+    def _quota_info(self, device):
+        """Ce que l'application doit savoir avant de demander un quiz."""
+        limited = 'failures' if self._failures_exhausted(device) else ('blocked' if device.blocked else '')
+        return {
+            'remaining': 0 if limited else self._remaining(device),
+            'daily': self._int_param('comprendre.daily_quota', 5),
+            'max_chars': self._int_param('comprendre.max_chars', 30000),
+            'enabled': self._param('comprendre.enabled', '1') not in ('0', 'False', 'false'),
+            'limited': limited,
+            'languages': sorted(LANGUAGES),
+        }
 
     # ------------------------------------------------------------------ #
     @api.model
@@ -168,17 +243,17 @@ class ComprendreAiRequest(models.Model):
         key = self._param('comprendre.anthropic_api_key', '') or os.environ.get('ANTHROPIC_API_KEY', '')
         if not key:
             raise Refusal(_("Le service de quiz IA n'est pas configuré."), 'not_configured')
-        return anthropic.Anthropic(api_key=key, timeout=120.0, max_retries=2)
+        return anthropic.Anthropic(api_key=key, timeout=API_TIMEOUT, max_retries=API_RETRIES)
 
     @api.model
     def _call_claude(self, text, lang, count):
         """Appelle Claude ; renvoie (données JSON, jetons entrée, jetons sortie, modèle).
 
+        Un refus *après* un appel facturé porte ``usage`` (coût journalisé, plafonné).
         Isolé pour être remplacé dans les tests (aucun appel réel, aucun coût).
         """
         import anthropic  # noqa: PLC0415
         model = self._param('comprendre.model', DEFAULT_MODEL) or DEFAULT_MODEL
-        language = 'French' if lang == 'fr' else 'English'
         client = self._client()
         try:
             response = client.beta.messages.create(
@@ -190,27 +265,30 @@ class ComprendreAiRequest(models.Model):
                 output_config={'effort': 'medium', 'format': {'type': 'json_schema', 'schema': QUIZ_SCHEMA}},
                 messages=[{
                     'role': 'user',
-                    'content': "Language: %s\nNumber of questions: %d\n\n<text>\n%s\n</text>" % (language, count, text),
+                    'content': "Language: %s\nNumber of questions: %d\n\n<text>\n%s\n</text>" % (
+                        LANGUAGES.get(lang, 'French'), count, text),
                 }],
             )
         except anthropic.RateLimitError as e:
             raise Refusal(_("Le service est très demandé : réessayez dans quelques minutes."), 'busy') from e
+        except anthropic.APITimeoutError as e:
+            raise Refusal(_("Le service de quiz IA a mis trop de temps à répondre."), 'unavailable') from e
         except anthropic.APIStatusError as e:
             _logger.warning("Comprendre : erreur de l'API Claude %s", e.status_code)
             raise Refusal(_("Le service de quiz IA est momentanément indisponible."), 'unavailable') from e
         except anthropic.APIConnectionError as e:
             raise Refusal(_("Le service de quiz IA est injoignable."), 'unavailable') from e
+        usage = (response.usage.input_tokens or 0, response.usage.output_tokens or 0, response.model)
         if response.stop_reason == 'refusal':
-            raise Refusal(_("Ce texte ne peut pas être traité par le service de quiz IA."), 'refused_content')
+            raise Refusal(_("Ce texte ne peut pas être traité par le service de quiz IA."), 'refused_content', usage)
         if response.stop_reason == 'max_tokens':
-            raise Refusal(_("Le texte est trop long pour un quiz complet : raccourcissez-le."), 'too_long')
+            raise Refusal(_("Le texte est trop long pour un quiz complet : raccourcissez-le."), 'too_long', usage)
         payload = next((b.text for b in response.content if b.type == 'text'), '')
         try:
             data = json.loads(payload)
         except ValueError as e:
-            raise Refusal(_("Réponse illisible du service de quiz IA."), 'bad_response') from e
-        usage = response.usage
-        return data, usage.input_tokens or 0, usage.output_tokens or 0, response.model
+            raise Refusal(_("Réponse illisible du service de quiz IA."), 'bad_response', usage) from e
+        return (data,) + usage
 
     @api.model
     def _validate(self, data, text):
@@ -245,15 +323,37 @@ class ComprendreAiRequest(models.Model):
         return kept, dropped
 
     @api.model
+    def _reserve(self, device, ip_hash, text, lang):
+        """Vérifie le quota sous verrou et réserve une demande (``pending``), puis valide la transaction.
+
+        Le verrou sur l'appareil empêche deux demandes simultanées du même téléphone
+        de dépasser le quota ; il est relâché AVANT l'appel à Claude (qui peut durer
+        plus d'une minute) : la ligne ``pending`` compte déjà dans le quota.
+        """
+        self.env.cr.execute('SELECT id FROM comprendre_device WHERE id = %s FOR UPDATE', [device.id])
+        if device.blocked:
+            raise Refusal(_("Cet appareil ne peut plus obtenir de quiz IA."), 'blocked')
+        if self._remaining(device) <= 0:
+            raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
+        if self._failures_exhausted(device):
+            raise Refusal(_("Le service IA n'a pas réussi plusieurs fois aujourd'hui : le quiz est créé "
+                            "sur votre téléphone."), 'failures')
+        if self._ip_exhausted(ip_hash):
+            raise Refusal(_("Trop de demandes depuis ce réseau aujourd'hui."), 'network_quota')
+        device.last_seen = fields.Datetime.now()
+        log = self.create({'device_id': device.id, 'ip_hash': ip_hash, 'lang': lang, 'chars': len(text),
+                           'state': 'pending'})
+        if not _testing():  # les tests tournent dans une transaction qu'on ne valide jamais
+            self.env.cr.commit()
+        return log
+
+    @api.model
     def _generate(self, device, ip_hash, text, lang, count):
         """Point d'entrée : vérifie le quota, appelle Claude, contrôle, journalise.
 
-        Renvoie le quiz, ou ``{'error': message}`` si l'appel a eu lieu mais n'a
-        rien donné d'utilisable (journalisé). Les refus préalables (quota,
-        texte invalide) lèvent ``UserError`` : rien n'a été consommé.
-
-        Le quota est vérifié sous un verrou de ligne sur l'appareil : deux
-        demandes simultanées du même téléphone ne peuvent pas dépasser le quota.
+        Renvoie le quiz, ou ``{'error': message, 'reason': code}`` si l'appel a eu
+        lieu mais n'a rien donné d'utilisable (journalisé). Les refus préalables
+        (quota, texte invalide) lèvent ``Refusal`` : rien n'a été consommé.
         """
         if self._param('comprendre.enabled', '1') in ('0', 'False', 'false'):
             raise Refusal(_("Le service de quiz IA est désactivé."), 'disabled')
@@ -263,32 +363,36 @@ class ComprendreAiRequest(models.Model):
             raise Refusal(_("Texte trop court pour un quiz (%s caractères au moins).", MIN_CHARS), 'too_short')
         if len(text) > max_chars:
             raise Refusal(_("Texte trop long (%s caractères au plus) : choisissez un passage.", max_chars), 'too_long')
-        lang = 'en' if lang == 'en' else 'fr'
-        count = max(5, min(int(count or 10), 15))
-        self.env.cr.execute('SELECT id FROM comprendre_device WHERE id = %s FOR UPDATE', [device.id])
-        if device.blocked:
-            raise Refusal(_("Cet appareil ne peut plus obtenir de quiz IA."), 'blocked')
-        if self._remaining(device) <= 0:
-            raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
-        if self._ip_exhausted(ip_hash):
-            raise Refusal(_("Trop de demandes depuis ce réseau aujourd'hui."), 'network_quota')
-        device.last_seen = fields.Datetime.now()
-
-        log = self.create({'device_id': device.id, 'ip_hash': ip_hash, 'lang': lang, 'chars': len(text)})
+        lang = lang if lang in LANGUAGES else 'fr'
+        try:
+            count = max(5, min(int(count or 10), 15))
+        except (TypeError, ValueError):
+            count = 10
+        log = self._reserve(device, ip_hash, text, lang)
         started = time.monotonic()
-        # À partir d'ici, un échec est RENVOYÉ (pas levé) : la ligne du journal
-        # doit survivre, car un appel échoué ou écarté a pu consommer des jetons.
+        # À partir d'ici, un échec est RENVOYÉ (pas levé) : la ligne du journal doit
+        # être mise à jour, car un appel échoué ou écarté a pu consommer des jetons.
         try:
             data, tokens_in, tokens_out, model = self._call_claude(text, lang, count)
-        except UserError as e:
-            message = str(e.args[0])
-            log.write({'state': 'failed', 'error': message[:200], 'duration_ms': int((time.monotonic() - started) * 1000)})
-            return {'error': message, 'reason': getattr(e, 'reason', 'ai_error')}
+        except Exception as e:  # noqa: BLE001 — tout échec doit libérer la réservation
+            usage = getattr(e, 'usage', None)
+            if isinstance(e, UserError):
+                message, reason = str(e.args[0]), getattr(e, 'reason', 'ai_error')
+            else:
+                _logger.exception("Comprendre : échec inattendu de l'appel à Claude")
+                message, reason = _("Le service de quiz IA a rencontré une erreur."), 'ai_error'
+            values = {'state': 'rejected' if usage else 'failed', 'error': message[:200],
+                      'duration_ms': int((time.monotonic() - started) * 1000)}
+            if usage:
+                values.update(input_tokens=usage[0], output_tokens=usage[1], model=usage[2])
+            log.write(values)
+            return {'error': message, 'reason': reason}
         questions, dropped = self._validate(data, text)
         state = 'done' if len(questions) >= MIN_VALID_QUESTIONS else 'rejected'
         log.write({'state': state, 'model': model, 'input_tokens': tokens_in, 'output_tokens': tokens_out,
                    'questions': len(questions), 'dropped': dropped,
-                   'duration_ms': int((time.monotonic() - started) * 1000)})
+                   'duration_ms': int((time.monotonic() - started) * 1000),
+                   'error': False if state == 'done' else _("Moins de %s questions vérifiées.", MIN_VALID_QUESTIONS)})
         if state != 'done':
             return {'error': _("Le quiz IA n'a pas pu être vérifié : le quiz est créé sur votre téléphone."),
                     'reason': 'unverified'}
@@ -298,3 +402,12 @@ class ComprendreAiRequest(models.Model):
             'questions': questions,
             'remaining': self._remaining(device),
         }
+
+    @api.model
+    def _gc_pending(self):
+        """Tâche planifiée : une demande restée « en cours » plus d'une heure (processus
+        interrompu en plein appel) passe en échec et rend la place dans le quota du jour."""
+        limit = fields.Datetime.subtract(fields.Datetime.now(), hours=1)
+        stale = self.search([('state', '=', 'pending'), ('create_date', '<', limit)])
+        stale.write({'state': 'failed', 'error': _("Interrompue (pas de réponse enregistrée).")})
+        return len(stale)

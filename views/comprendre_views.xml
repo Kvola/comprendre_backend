@@ -4,7 +4,7 @@
         <field name="name">comprendre.ai.request.list</field>
         <field name="model">comprendre.ai.request</field>
         <field name="arch" type="xml">
-            <list create="0" edit="0" decoration-danger="state == 'failed'" decoration-warning="state == 'rejected'">
+            <list create="0" edit="0" decoration-danger="state == 'failed'" decoration-warning="state == 'rejected'" decoration-info="state == 'pending'">
                 <field name="create_date" string="Le"/>
                 <field name="device_id"/>
                 <field name="state" widget="badge"/>
@@ -13,6 +13,7 @@
                 <field name="model" optional="hide"/>
                 <field name="input_tokens" sum="Total"/>
                 <field name="output_tokens" sum="Total"/>
+                <field name="cost" sum="Total"/>
                 <field name="questions"/>
                 <field name="dropped"/>
                 <field name="duration_ms" optional="hide"/>
@@ -27,10 +28,13 @@
             <search>
                 <field name="device_id"/>
                 <filter name="today" string="Aujourd'hui" domain="[('day', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="failed" string="Échecs" domain="[('state', '!=', 'done')]"/>
+                <filter name="failed" string="Échecs" domain="[('state', 'in', ('failed', 'rejected'))]"/>
+                <filter name="billed" string="Facturées" domain="[('cost', '>', 0)]"/>
                 <group>
                     <filter name="by_day" string="Jour" context="{'group_by': 'day'}"/>
                     <filter name="by_state" string="Résultat" context="{'group_by': 'state'}"/>
+                    <filter name="by_model" string="Modèle" context="{'group_by': 'model'}"/>
+                    <filter name="by_month" string="Mois" context="{'group_by': 'day:month'}"/>
                 </group>
             </search>
         </field>
@@ -38,8 +42,31 @@
     <record id="action_requests" model="ir.actions.act_window">
         <field name="name">Demandes de quiz IA</field>
         <field name="res_model">comprendre.ai.request</field>
-        <field name="view_mode">list</field>
+        <field name="view_mode">list,pivot,graph</field>
         <field name="context">{'search_default_by_day': 1}</field>
+    </record>
+    <record id="view_request_pivot" model="ir.ui.view">
+        <field name="name">comprendre.ai.request.pivot</field>
+        <field name="model">comprendre.ai.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Coût des quiz IA" sample="1">
+                <field name="day" interval="month" type="row"/>
+                <field name="state" type="col"/>
+                <field name="cost" type="measure"/>
+                <field name="input_tokens" type="measure"/>
+                <field name="output_tokens" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+    <record id="view_request_graph" model="ir.ui.view">
+        <field name="name">comprendre.ai.request.graph</field>
+        <field name="model">comprendre.ai.request</field>
+        <field name="arch" type="xml">
+            <graph string="Coût des quiz IA" type="bar" sample="1">
+                <field name="day" interval="day"/>
+                <field name="cost" type="measure"/>
+            </graph>
+        </field>
     </record>
     <record id="view_device_list" model="ir.ui.view">
         <field name="name">comprendre.device.list</field>

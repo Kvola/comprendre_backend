@@ -40,10 +40,7 @@ class ComprendreApi(Controller):
             device = request.env['comprendre.device'].sudo()._for_key(kw.get('device_id'))
         except UserError as e:
             return fail('BAD_REQUEST', str(e.args[0]), reason=getattr(e, 'reason', 'bad_request'))
-        Req = request.env['comprendre.ai.request'].sudo()
-        return ok(remaining=Req._remaining(device), daily=Req._int_param('comprendre.daily_quota', 5),
-                  max_chars=Req._int_param('comprendre.max_chars', 30000),
-                  enabled=Req._param('comprendre.enabled', '1') not in ('0', 'False', 'false'))
+        return ok(**request.env['comprendre.ai.request'].sudo()._quota_info(device))
 
     @route(API + '/quiz', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def quiz(self, **kw):

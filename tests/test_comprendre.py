@@ -5,7 +5,9 @@ from unittest.mock import patch
 from odoo.exceptions import UserError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
-from ..models.comprendre import normalize
+from types import SimpleNamespace as NS
+
+from ..models.comprendre import API_RETRIES, API_TIMEOUT, Refusal, normalize, price_of
 
 TEXT = (
     "Le baobab est un arbre emblématique des savanes africaines. Il peut vivre plus de mille ans. "
@@ -123,6 +125,111 @@ class TestComprendre(TransactionCase):
         self.assertEqual(r['reason'], 'not_configured')
 
 
+    # -- 1.2.0 : réservation, échecs facturés, coût, langues ----------------
+    def test_pending_reservation_counts_during_call(self):
+        seen = {}
+
+        def call(_self, text, lang, count):
+            log = self.Req.search([('device_id', '=', self.device.id)])
+            seen['state'] = log.state
+            seen['remaining'] = self.Req._remaining(self.device)
+            return fake_quiz(), 10, 10, 'claude-opus-5-5'
+        with patch.object(type(self.Req), '_call_claude', call):
+            self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+        self.assertEqual(seen, {'state': 'pending', 'remaining': 4}, "la demande en cours compte déjà")
+        self.assertEqual(self.Req._remaining(self.device), 4)
+
+    def _billed_refusal(self, reason='bad_response'):
+        def call(_self, text, lang, count):
+            raise Refusal("illisible", reason, (5000, 3000, 'claude-opus-5-5'))
+        return patch.object(type(self.Req), '_call_claude', call)
+
+    def test_billed_failures_are_capped(self):
+        self.env['ir.config_parameter'].sudo().set_param('comprendre.daily_rejected_cap', 2)
+        with self._billed_refusal():
+            for _i in range(2):
+                r = self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+                self.assertEqual(r['reason'], 'bad_response')
+        logs = self.Req.search([('device_id', '=', self.device.id)])
+        self.assertEqual(set(logs.mapped('state')), {'rejected'})
+        self.assertAlmostEqual(sum(logs.mapped('cost')), 2 * (5000 * 4 + 3000 * 20) / 1e6, places=6)
+        self.assertEqual(self.Req._remaining(self.device), 5, "un échec ne consomme pas le quota de quiz")
+        with self._patch(), self.assertRaises(UserError) as ctx:
+            self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+        self.assertEqual(ctx.exception.reason, 'failures')
+        info = self.Req._quota_info(self.device)
+        self.assertEqual((info['remaining'], info['limited']), (0, 'failures'))
+
+    def test_unexpected_error_frees_reservation(self):
+        def call(_self, text, lang, count):
+            raise TypeError("boom")
+        with patch.object(type(self.Req), '_call_claude', call), \
+                self.assertLogs('odoo.addons.comprendre_backend.models.comprendre', level='ERROR'):
+            r = self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+        self.assertEqual(r['reason'], 'ai_error')
+        self.assertEqual(self.Req.search([('device_id', '=', self.device.id)]).state, 'failed')
+        self.assertEqual(self.Req._remaining(self.device), 5)
+
+    def test_cost_and_prices(self):
+        with self._patch():
+            self.Req._generate(self.device, 'ip1', TEXT, 'fr', 10)
+        log = self.Req.search([('device_id', '=', self.device.id)])
+        self.assertAlmostEqual(log.cost, (1200 * 4 + 800 * 20) / 1e6, places=6)
+        self.assertEqual(price_of('claude-sonnet-5-5'), (2.0, 10.0))
+        self.assertEqual(price_of('claude-opus-5'), (5.0, 25.0), "opus-5 ne doit pas prendre le prix d'opus-5-5")
+        self.assertIsNone(price_of('inconnu'))
+
+    def test_languages(self):
+        langs = []
+
+        def call(_self, text, lang, count):
+            langs.append(lang)
+            return fake_quiz(), 10, 10, 'claude-opus-5-5'
+        with patch.object(type(self.Req), '_call_claude', call):
+            for lang in ('es', 'de', 'xx', None):
+                self.Req._generate(self.device, 'ip1', TEXT, lang, 'beaucoup')
+        self.assertEqual(langs, ['es', 'de', 'fr', 'fr'])
+        self.assertIn('pt', self.Req._quota_info(self.device)['languages'])
+
+    def test_gc_pending(self):
+        log = self.Req.create({'device_id': self.device.id, 'state': 'pending'})
+        self.env.cr.execute("UPDATE comprendre_ai_request SET create_date = now() - interval '2 hours' WHERE id = %s",
+                            [log.id])
+        log.invalidate_recordset()
+        self.assertEqual(self.Req._gc_pending(), 1)
+        self.assertEqual(log.state, 'failed')
+
+    def test_call_claude_with_fake_client(self):
+        """Le vrai _call_claude, avec un client simulé : paramètres envoyés et refus facturés."""
+        sent = {}
+
+        def response(stop='end_turn', text=None):
+            return NS(stop_reason=stop, model='claude-opus-5-5', usage=NS(input_tokens=7, output_tokens=9),
+                      content=[NS(type='text', text=json.dumps(fake_quiz()) if text is None else text)])
+
+        def client_for(resp):
+            def create(**kw):
+                sent.update(kw)
+                return resp
+            return NS(beta=NS(messages=NS(create=create)))
+        Req = type(self.Req)
+        with patch.object(Req, '_client', lambda s: client_for(response())):
+            data, tin, tout, model = self.Req._call_claude(TEXT, 'es', 8)
+        self.assertEqual((len(data['questions']), tin, tout, model), (5, 7, 9, 'claude-opus-5-5'))
+        self.assertIn('Language: Spanish', sent['messages'][0]['content'])
+        self.assertEqual(sent['fallbacks'], 'default')
+        for stop, text, reason in (('max_tokens', None, 'too_long'), ('refusal', None, 'refused_content'),
+                                   ('end_turn', 'pas du json', 'bad_response')):
+            with patch.object(Req, '_client', lambda s, r=response(stop, text): client_for(r)):
+                with self.assertRaises(Refusal) as ctx:
+                    self.Req._call_claude(TEXT, 'fr', 8)
+            self.assertEqual((ctx.exception.reason, ctx.exception.usage), (reason, (7, 9, 'claude-opus-5-5')))
+
+    def test_timeouts_fit_the_app(self):
+        """L'application attend 240 s : tous les essais doivent tenir dedans."""
+        self.assertLess(API_TIMEOUT * (API_RETRIES + 1) + 10, 240)
+
+
 @tagged('post_install', '-at_install')
 class TestComprendreApi(HttpCase):
 
@@ -146,3 +253,6 @@ class TestComprendreApi(HttpCase):
             self.assertEqual(bad['error']['details']['reason'], 'bad_device')
             short = self.rpc('/quiz', device_id='api-device-0123456789', text='Trop court.')
             self.assertEqual(short['error']['details']['reason'], 'too_short')
+            q = self.rpc('/quota', device_id='api-device-0123456789')
+            self.assertEqual((q['remaining'], q['limited']), (4, ''))
+            self.assertIn('es', q['languages'])
