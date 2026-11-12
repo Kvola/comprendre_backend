@@ -1,16 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Assistant de tarification -->
+    <record id="view_pricing_form" model="ir.ui.view">
+        <field name="name">comprendre.ai.pricing.form</field>
+        <field name="model">comprendre.ai.pricing</field>
+        <field name="arch" type="xml">
+            <form string="Calculer les prix des offres">
+                <group>
+                    <group string="Coût de l'IA">
+                        <field name="period_days"/>
+                        <field name="measured_quizzes"/>
+                        <field name="measured_cost"/>
+                        <field name="estimated_cost"/>
+                        <field name="cost_usd"/>
+                        <field name="rate" invisible="rate == 1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group string="Règles de prix">
+                        <field name="safety_percent"/>
+                        <field name="wave_fee_percent"/>
+                        <field name="margin_percent"/>
+                        <field name="rounding"/>
+                        <field name="unit_price"/>
+                        <field name="floor_price"/>
+                    </group>
+                </group>
+                <field name="summary" nolabel="1" readonly="1"/>
+                <field name="line_ids">
+                    <list editable="bottom" decoration-danger="below_floor">
+                        <field name="sequence" widget="handle"/>
+                        <field name="pack_id" column_invisible="1"/>
+                        <field name="name"/>
+                        <field name="description" optional="show"/>
+                        <field name="credits"/>
+                        <field name="discount"/>
+                        <field name="validity_days"/>
+                        <field name="highlight"/>
+                        <field name="price"/>
+                        <field name="per_quiz"/>
+                        <field name="cost" optional="show"/>
+                        <field name="margin" optional="show"/>
+                        <field name="margin_percent"/>
+                        <field name="below_floor" column_invisible="1"/>
+                    </list>
+                </field>
+                <group>
+                    <field name="activate"/>
+                </group>
+                <footer>
+                    <button name="action_apply" type="object" string="Appliquer aux offres" class="btn-primary"/>
+                    <button special="cancel" string="Annuler"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_pricing" model="ir.actions.act_window">
+        <field name="name">Calculer les prix des offres</field>
+        <field name="res_model">comprendre.ai.pricing</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <!-- Offres -->
     <record id="view_pack_list" model="ir.ui.view">
         <field name="name">comprendre.ai.pack.list</field>
         <field name="model">comprendre.ai.pack</field>
         <field name="arch" type="xml">
             <list editable="bottom" decoration-muted="not active">
+                <header>
+                    <button name="%(action_pricing)d" type="action" string="Calculer les prix" class="btn-primary"
+                            display="always"/>
+                </header>
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="description"/>
                 <field name="credits"/>
                 <field name="price"/>
+                <field name="price_per_quiz" string="Par quiz"/>
+                <field name="highlight" string="En avant"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="validity_days"/>
                 <field name="daily_limit" optional="hide"/>

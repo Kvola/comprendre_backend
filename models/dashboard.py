@@ -64,9 +64,12 @@ class ComprendreDashboard(models.AbstractModel):
                    coalesce(sum(cost), 0),
                    coalesce(sum(cost) FILTER (WHERE code_id IS NOT NULL), 0),
                    count(DISTINCT device_id) FILTER (WHERE state = 'done'),
-                   coalesce(avg(duration_ms) FILTER (WHERE state = 'done'), 0)
+                   coalesce(avg(duration_ms) FILTER (WHERE state = 'done'), 0),
+                   count(*) FILTER (WHERE state = 'refused'),
+                   count(DISTINCT device_id) FILTER (WHERE state = 'refused')
               FROM comprendre_ai_request WHERE day BETWEEN %s AND %s""", [start, today])
-        done, free, coded, rejected, failed, pending, cost, cost_codes, devices, duration = cr.fetchone()
+        (done, free, coded, rejected, failed, pending, cost, cost_codes, devices, duration,
+         refused, refused_devices) = cr.fetchone()
         cr.execute("""SELECT count(*) FILTER (WHERE state = 'done'), coalesce(sum(cost), 0),
                              count(*) FILTER (WHERE state IN ('failed', 'rejected'))
                         FROM comprendre_ai_request WHERE day = %s""", [today])
@@ -78,6 +81,7 @@ class ComprendreDashboard(models.AbstractModel):
             'cost_per_quiz': float(cost) / done if done else 0.0,
             'failure_rate': 100.0 * (rejected + failed) / attempts if attempts else 0.0,
             'devices': devices, 'duration_s': float(duration) / 1000.0,
+            'refused': refused, 'refused_devices': refused_devices,
             'done_today': done_today, 'cost_today': float(cost_today), 'failed_today': failed_today,
         }
 
@@ -196,7 +200,13 @@ class ComprendreDashboard(models.AbstractModel):
             alerts.append({'level': 'warning', 'action': 'failures',
                            'text': _("Beaucoup d'échecs aujourd'hui (%(f)s échecs pour %(d)s réussis) : crédit "
                                      "Anthropic épuisé ou service indisponible ?", f=failed, d=done)})
-        to_validate = self.env['comprendre.ai.order'].sudo().search_count([('awaiting_validation', '=', True)])
+        Order = self.env['comprendre.ai.order'].sudo()
+        if Order._collection_info()['source'] == 'operator' and \
+                self.env['comprendre.ai.pack'].sudo().search_count([]):
+            alerts.append({'level': 'warning', 'action': 'settings',
+                           'text': _("Aucun lien marchand Wave n'est réglé : les achats sont encaissés sur le compte "
+                                     "de l'opérateur de la plateforme.")})
+        to_validate = Order.search_count([('awaiting_validation', '=', True)])
         if to_validate:
             alerts.append({'level': 'warning', 'action': 'to_validate',
                            'text': _("%s achat(s) payé(s) par lien Wave attendent votre validation.", to_validate)})

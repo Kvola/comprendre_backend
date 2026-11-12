@@ -3,7 +3,7 @@ import json
 from unittest.mock import patch
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.queue_payment.models.queue_wave import WaveError
@@ -199,3 +199,66 @@ class TestPurchaseApi(HttpCase):
         res = self.url_open('/comprendre/paiement/ACH-2026-00001')
         self.assertEqual(res.status_code, 200)
         self.assertIn('Comprendre', res.text)
+
+
+@tagged('post_install', '-at_install')
+class TestCollectionLink(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.Order = self.env['comprendre.ai.order']
+        self.company = self.Order._selling_company()
+        self.company.wave_payment_link = LINK
+        self.pack = self.env['comprendre.ai.pack'].create({'name': 'Étude', 'credits': 30, 'price': 2500})
+        self.device = self.env['comprendre.device']._for_key('collect-0123456789abcd')
+        self.Param = self.env['ir.config_parameter'].sudo()
+
+    def test_normalize(self):
+        from ..models.ai_purchase import normalize_wave_link
+        self.assertEqual(normalize_wave_link(' pay.wave.com/m/M_ci_AbC-12/c/ci?amount=500 '),
+                         'https://pay.wave.com/m/M_ci_AbC-12/c/ci/')
+        self.assertEqual(normalize_wave_link('https://PAY.WAVE.COM/m/M_ci_AbC-12/'), 'https://pay.wave.com/m/M_ci_AbC-12/')
+        self.assertEqual(normalize_wave_link(''), '')
+        for bad in ('https://wave.com/m/x', 'https://pay.wave.com.evil.io/m/M_ci_1234/', 'http://pay.wave.com/x',
+                    'javascript:alert(1)'):
+            with self.assertRaises(ValueError, msg=bad):
+                normalize_wave_link(bad)
+
+    def test_comprendre_link_comes_first_and_only_for_comprendre(self):
+        info = self.Order._collection_info()
+        self.assertEqual((info['source'], info['link']), ('company', LINK))
+        own = 'https://pay.wave.com/m/M_ci_COMPRENDRE/c/ci/'
+        self.env['res.config.settings'].create({'comprendre_wave_link': own + '?amount=9'}).execute()
+        self.assertEqual(self.Param.get_param('comprendre.wave_link'), own, "montant retiré du lien")
+        order, pay = self.Order._buy(self.device, self.pack.id, 'cli-own')
+        self.assertTrue(pay['url'].startswith(own), pay['url'])
+        self.assertIn('amount=2500', pay['url'])
+        self.assertEqual(self.company.wave_payment_link, LINK, "le lien de la société (autres produits) ne change pas")
+        self.assertEqual(self.Order._collection_info()['source'], 'comprendre')
+        # Vidé : retour au lien de la société.
+        self.env['res.config.settings'].create({'comprendre_wave_link': False}).execute()
+        self.assertFalse(self.Param.get_param('comprendre.wave_link'))
+        self.assertEqual(self.Order._collection_info()['source'], 'company')
+
+    def test_invalid_link_is_refused_and_summary_tells_where_money_goes(self):
+        with self.assertRaises(ValidationError):
+            self.env['res.config.settings'].create({'comprendre_wave_link': 'https://example.com/pay'}).execute()
+        self.company.wave_payment_link = False
+        self.Param.set_param('queue_management.wave_default_link', False)
+        s = self.env['res.config.settings'].create({})
+        self.assertIn("opérateur", s.comprendre_collection)
+        self.assertEqual(self.Order._collection_info()['source'], 'operator')
+        alerts = self.env['comprendre.dashboard'].get_data(7)['alerts']
+        self.assertTrue(any(a.get('action') == 'settings' for a in alerts))
+        s.comprendre_wave_link = 'https://pay.wave.com/m/M_ci_MINE/c/ci/'
+        self.assertIn('M_ci_MINE', s.comprendre_collection)
+        self.assertIn('par un agent', s.comprendre_collection)
+        action = s.action_comprendre_open_wave_link()
+        self.assertEqual(action['url'], 'https://pay.wave.com/m/M_ci_MINE/c/ci/?amount=100')
+
+    def test_collecting_company_setting(self):
+        other = self.env['res.company'].create({'name': 'Comprendre SARL'})
+        self.env['res.config.settings'].create({'comprendre_company_id': other.id}).execute()
+        self.assertEqual(self.Order._selling_company(), other)
+        self.env['res.config.settings'].create({'comprendre_company_id': self.env.ref('base.main_company').id}).execute()
+        self.assertFalse(self.Param.get_param('comprendre.company_id'))

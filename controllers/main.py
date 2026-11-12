@@ -143,8 +143,10 @@ class ComprendreApi(Controller):
         company = Order._selling_company()
         packs = request.env['comprendre.ai.pack'].sudo().search([('company_id', '=', company.id)])
         wave = request.env['queue.wave.mixin'].sudo()
+        offers, advice = request.env['comprendre.ai.pack'].sudo()._offer(packs, device)
         return {
-            'packs': [p._api_dict() for p in packs],
+            'packs': offers,
+            'advice': advice,
             'payment_available': bool(packs) and bool(
                 wave._wave_api_configured(company) or wave._wave_operator_link(company)),
             'auto_confirm': bool(wave._wave_api_configured(company)),

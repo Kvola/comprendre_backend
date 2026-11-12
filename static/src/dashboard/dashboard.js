@@ -129,6 +129,7 @@ export class ComprendreDashboard extends Component {
     }
     openAlert(alert) {
         if (alert.action === "to_validate") this.action.doAction("comprendre_backend.action_orders_to_validate");
+        else if (alert.action === "settings") this.openSettings();
         else if (alert.action === "failures") {
             this.open("comprendre.ai.request", "Échecs du jour",
                 [["day", "=", this.state.data.today], ["state", "in", ["failed", "rejected"]]]);

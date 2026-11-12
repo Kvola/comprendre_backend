@@ -26,6 +26,7 @@
             <field name="credits">30</field>
             <field name="price">2500</field>
             <field name="validity_days">180</field>
+            <field name="highlight" eval="True"/>
             <field name="active" eval="False"/>
         </record>
         <record id="pack_intensive" model="comprendre.ai.pack">

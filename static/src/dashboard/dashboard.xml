@@ -214,6 +214,11 @@
                             <span t-att-class="'o_cd_value' + (d.sales.to_validate ? ' text-warning' : '')" t-out="int(d.sales.to_validate)"/>
                             <span class="o_cd_sub"><t t-out="int(d.sales.drafts)"/> achats non payés en cours</span>
                         </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openRequests([['state', '=', 'refused']], 'Demandes refusées : quota atteint')">
+                            <span class="o_cd_label">Demande au-delà du gratuit</span>
+                            <span class="o_cd_value" t-out="int(d.usage.refused)"/>
+                            <span class="o_cd_sub">quiz refusés (quota atteint) · <t t-out="int(d.usage.refused_devices)"/> appareils</span>
+                        </button>
                         <button type="button" class="o_cd_kpi" t-on-click="() => this.open('comprendre.ai.pack', 'Offres', [], {}, ['list', 'form'])">
                             <span class="o_cd_label">Offres en vente</span>
                             <span t-att-class="'o_cd_value' + (d.sales.packs_on_sale ? '' : ' text-muted')" t-out="int(d.sales.packs_on_sale)"/>

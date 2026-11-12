@@ -38,6 +38,23 @@
                             <field name="comprendre_usd_rate"/>
                         </setting>
                     </block>
+                    <block title="Encaissement des achats de quiz IA" name="comprendre_collection">
+                        <setting string="Société qui encaisse"
+                                 help="Celle dont la devise, l'API Wave et les paiements servent aux achats.">
+                            <field name="comprendre_company_id" options="{'no_create': True}"/>
+                        </setting>
+                        <setting string="Lien marchand Wave de Comprendre"
+                                 help="Wave Business → Encaisser → Partager le lien (https://pay.wave.com/m/…). Il ne sert qu'aux achats de quiz IA ; vide, le lien de la société est utilisé.">
+                            <field name="comprendre_wave_link" placeholder="https://pay.wave.com/m/M_ci_xxxx/c/ci/"/>
+                            <div class="mt-2">
+                                <button name="action_comprendre_open_wave_link" type="object" icon="fa-external-link"
+                                        string="Vérifier la page Wave (sans payer)" class="btn-link p-0"/>
+                            </div>
+                        </setting>
+                        <setting string="Où va l'argent" help="Mis à jour pendant la saisie.">
+                            <field name="comprendre_collection" nolabel="1"/>
+                        </setting>
+                    </block>
                     <block title="Quotas et protections" name="comprendre_quotas">
                         <setting string="Quiz IA gratuits par jour" help="Par téléphone. Les codes IA s'ajoutent à ce quota.">
                             <field name="comprendre_daily_quota"/>
@@ -77,6 +94,7 @@
     <menuitem id="menu_orders_to_validate" name="Achats à valider" parent="menu_shop" action="action_orders_to_validate" sequence="1"/>
     <menuitem id="menu_orders" name="Tous les achats" parent="menu_shop" action="action_orders" sequence="2"/>
     <menuitem id="menu_packs" name="Offres" parent="menu_shop" action="action_packs" sequence="3"/>
+    <menuitem id="menu_pricing" name="Calculer les prix" parent="menu_shop" action="action_pricing" sequence="4"/>
 
     <menuitem id="menu_usage" name="Suivi de l'IA" parent="menu_root" sequence="30"/>
     <menuitem id="menu_requests" name="Demandes de quiz IA" parent="menu_usage" action="action_requests" sequence="1"/>

@@ -30,6 +30,28 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+WAVE_LINK_RE = re.compile(r'^https://pay\.wave\.com/m/[A-Za-z0-9_-]{4,}(?:/c/[a-z]{2})?/?$')
+
+
+def normalize_wave_link(text):
+    """Lien marchand Wave propre (« https://pay.wave.com/m/M_ci_xxx/c/ci/ ») : sans montant ni espaces.
+    Vide → ''. Lève ``ValueError`` si ce n'est pas un lien marchand Wave."""
+    from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit  # noqa: PLC0415
+    text = (text or '').strip()
+    if not text:
+        return ''
+    if not text.startswith('http'):
+        text = 'https://' + text
+    parts = urlsplit(text)
+    query = [(k, v) for k, v in parse_qsl(parts.query) if k != 'amount']  # le montant est ajouté à chaque achat
+    base = urlunsplit(('https', parts.netloc.lower(), parts.path, '', ''))
+    if not WAVE_LINK_RE.match(base):
+        raise ValueError(text)
+    if not base.endswith('/'):
+        base += '/'
+    return base + ('?' + urlencode(query) if query else '')
+
+
 ORDER_STATES = [
     ('draft', "À payer"),
     ('done', "Payé, code délivré"),
@@ -57,6 +79,8 @@ class ComprendreAiPack(models.Model):
     daily_limit = fields.Integer("Plafond par jour", default=0, help="Quiz IA par jour sur le code (0 : pas de plafond).")
     order_ids = fields.One2many('comprendre.ai.order', 'pack_id', "Achats")
     sold_count = fields.Integer("Vendus", compute='_compute_sold')
+    highlight = fields.Boolean("Mettre en avant", help="Affichée « Le plus choisi » dans l'application (une seule offre de préférence).")
+    price_per_quiz = fields.Float("Prix par quiz", compute='_compute_price_per_quiz', digits=(12, 2))
 
     _credits_positive = models.Constraint('CHECK(credits > 0)', "Une offre donne au moins un quiz IA.")
     _price_positive = models.Constraint('CHECK(price > 0)', "Le prix doit être positif.")
@@ -66,8 +90,18 @@ class ComprendreAiPack(models.Model):
         for p in self:
             p.sold_count = len(p.order_ids.filtered(lambda o: o.state == 'done'))
 
-    def _api_dict(self):
+    @api.depends('price', 'credits')
+    def _compute_price_per_quiz(self):
+        for p in self:
+            p.price_per_quiz = p.price / p.credits if p.credits else 0.0
+
+    def _api_dict(self, reference=0.0, best=None, recommended=None):
+        """Ce que l'application affiche. ``reference`` : prix par quiz le plus élevé des offres
+        proposées (pour « −20 % par quiz ») ; ``best`` : l'offre au meilleur prix par quiz ;
+        ``recommended`` : l'offre conseillée à cet appareil d'après son usage."""
         self.ensure_one()
+        per_quiz = self.price / self.credits if self.credits else 0.0
+        saving = round(100 * (1 - per_quiz / reference)) if reference and per_quiz < reference else 0
         return {
             'id': self.id,
             'name': self.name,
@@ -77,8 +111,62 @@ class ComprendreAiPack(models.Model):
             'currency': self.currency_id.name,
             'validity_days': self.validity_days,
             'daily_limit': self.daily_limit,
+            # 1.6 :
+            'price_per_quiz': round(per_quiz, 2),
+            'saving_percent': saving if saving >= 5 else 0,  # moins de 5 % : pas la peine de l'annoncer
+            'highlight': self.highlight,
+            'best_value': bool(best) and best == self and saving >= 5,
+            'recommended': bool(recommended) and recommended == self,
         }
 
+    @api.model
+    def _offer(self, packs, device=None):
+        """Les offres pour l'application, avec économies, meilleur prix et conseil personnel."""
+        packs = packs.filtered(lambda p: p.credits > 0)
+        if not packs:
+            return [], {}
+        per_quiz = {p: p.price / p.credits for p in packs}
+        reference = max(per_quiz.values())
+        best = min(packs, key=lambda p: (per_quiz[p], -p.credits)) if len(packs) > 1 else None
+        usage = self._usage_30_days(device) if device else {'total': 0, 'extra': 0}
+        recommended = self._recommend(packs, usage['extra'])
+        advice = {
+            'monthly': usage['total'],
+            # Quiz IA voulus au-delà du quota gratuit (payés par un code, ou refusés faute de quota).
+            'extra_monthly': usage['extra'],
+            'free_enough': usage['total'] > 0 and usage['extra'] == 0,
+            'daily_free': self.env['comprendre.ai.request'].sudo()._int_param('comprendre.daily_quota', 5),
+            'recommended_id': recommended.id if recommended else False,
+        }
+        return [p._api_dict(reference, best, recommended) for p in packs], advice
+
+    @api.model
+    def _usage_30_days(self, device):
+        """Usage de l'appareil sur 30 jours : quiz IA réussis, et besoin au-delà du quota gratuit."""
+        since = fields.Date.context_today(self) - relativedelta(days=29)
+        Req = self.env['comprendre.ai.request'].sudo()
+        base = [('device_id', '=', device.id), ('day', '>=', since)]
+        total = Req.search_count(base + [('state', '=', 'done')])
+        extra = Req.search_count(base + ['|', '&', ('state', '=', 'done'), ('code_id', '!=', False),
+                                         ('state', '=', 'refused')])
+        return {'total': total, 'extra': extra}
+
+    @api.model
+    def _recommend(self, packs, extra_monthly):
+        """L'offre conseillée : la plus grosse qui couvre environ 3 mois du besoin au-delà du gratuit,
+        et que ce besoin consommera avant sa date limite (jamais de quiz qui expireraient) ;
+        le besoin est plus petit que toutes les offres : la plus petite. Pas de besoin : aucun conseil."""
+        if extra_monthly <= 0:
+            return None
+        need = extra_monthly * 3
+
+        def consumed_in_time(p):
+            return not p.validity_days or p.credits <= extra_monthly * p.validity_days / 30.0
+
+        fitting = packs.filtered(lambda p: p.credits <= need and consumed_in_time(p))
+        if fitting:
+            return max(fitting, key=lambda p: (p.credits, -p.price))
+        return min(packs, key=lambda p: (p.credits, p.price))
 
 class ComprendreAiOrder(models.Model):
     """L'achat d'une offre par un appareil : document encaissable (``queue.payable.mixin``)."""
@@ -159,6 +247,34 @@ class ComprendreAiOrder(models.Model):
     def _payment_company(self):
         self.ensure_one()
         return self.company_id
+
+    def _wave_merchant_link(self):
+        """Crochet de ``queue_payment`` : le lien marchand propre à Comprendre, s'il est réglé
+        (Réglages → Comprendre). Il passe avant celui de la société, qui peut servir à d'autres
+        produits ; vide, l'argent va au lien de la société, puis de la plateforme, puis de l'opérateur."""
+        self.ensure_one()
+        return self._comprendre_wave_link()
+
+    @api.model
+    def _comprendre_wave_link(self):
+        return (self.env['ir.config_parameter'].sudo().get_param('comprendre.wave_link') or '').strip()
+
+    @api.model
+    def _collection_info(self):
+        """Où va l'argent des achats, et comment il est confirmé (réglages, tableau de bord)."""
+        company = self._selling_company()
+        Wave = self.env['queue.wave.mixin'].sudo()
+        own = self._comprendre_wave_link()
+        if own:
+            link, source = own, 'comprendre'
+        elif (company.wave_payment_link or '').strip():
+            link, source = company.wave_payment_link.strip(), 'company'
+        elif Wave._wave_default_link():
+            link, source = Wave._wave_default_link(), 'platform'
+        else:
+            link, source = Wave._wave_operator_link(company), 'operator'
+        return {'company': company, 'link': link, 'source': source,
+                'auto_confirm': bool(Wave._wave_api_configured(company))}
 
     def _payment_description(self):
         self.ensure_one()

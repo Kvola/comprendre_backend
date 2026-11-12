@@ -40,6 +40,9 @@ Les utilisateurs achètent des quiz IA dans l'application ; le paiement confirm�
   - Une session Wave impossible retombe sur le lien marchand.
 - **Garanties** : un achat renvoyé avec la même clé (`client_ref`) est le même achat, avec le même paiement ; un webhook rejoué ne crédite pas deux fois ; une validation défaite désactive le code, une nouvelle validation le réactive (jamais deux codes) ; achats non payés annulés au bout de 30 jours (tâche quotidienne) ; un appareil ne voit et ne touche que ses achats.
 - **API** : `/shop` (offres, achats de l'appareil), `/buy` (`pack_id`, `client_ref` → achat + URL Wave ; 10 / 10 min / IP), `/orders` (achats + quota), `/order/wave-ref` ; page de retour `/comprendre/paiement/<réf>`.
+- **Lien marchand Wave de Comprendre** (Réglages → *Encaissement des achats de quiz IA*, paramètre `comprendre.wave_link`) : ne sert qu'aux achats de quiz IA (crochet `_wave_merchant_link` de `queue_payment`) et passe avant le lien de la société, qui peut servir à d'autres produits. Le lien est vérifié (`https://pay.wave.com/m/…`) et nettoyé (montant retiré, il est ajouté à chaque achat). Ordre : lien de Comprendre → lien de la société → lien par défaut de la plateforme → compte de l'opérateur (alerte sur le tableau de bord). Les réglages résument où va l'argent et comment il est confirmé (API Wave : automatique ; sinon un agent), et ouvrent la page Wave (100 F, sans payer) pour vérifier le nom du marchand. La **société qui encaisse** s'y choisit aussi (`comprendre.company_id`).
+- **Tarifs** (19.0.1.6.0) : `/shop` donne pour chaque offre `price_per_quiz`, `saving_percent` (par rapport à l'offre la plus chère par quiz ; affiché dès 5 %), `highlight` (« Le plus choisi », coché sur l'offre), `best_value`, `recommended`, et `advice` (`extra_monthly` : quiz voulus au-delà du gratuit sur 30 jours, c.-à-d. payés par un code ou refusés faute de quota ; `free_enough`). Conseil : la plus grosse offre ≤ 3 mois de ce besoin et consommée avant sa date limite, sinon la plus petite ; aucun conseil sans besoin. Les demandes refusées faute de quota sont journalisées (état *Quota atteint*, sans coût) ; le tableau de bord les montre (« Demande au-delà du gratuit »).
+- **Calculer les prix** (Ventes de quiz IA, ou bouton sur les Offres ; assistant `comprendre.ai.pricing`) : coût mesuré par quiz réussi (échecs facturés compris) sur 90 jours, ou estimation d'après le modèle (6 000 + 3 000 jetons) s'il y a moins de 20 quiz ; prix d'un quiz = coût × (1 + sécurité 30 %) ÷ ((1 − commission Wave 1 %) × (1 − marge 40 %)) ; remise par offre, arrondi au palier supérieur (50 F), jamais sous le plancher (coût + sécurité + commission). Affiche prix, prix par quiz, coût, marge ; **Appliquer aux offres** crée ou met à jour les offres (et les met en vente si coché).
 - Dépend de `queue_payment` (déjà installé en production pour Kavola).
 
 ## Tableau de bord
@@ -68,6 +71,8 @@ python3 docs/md_to_guide_qweb.py comprendre
 | Clé | Défaut | Rôle |
 |---|---|---|
 | `comprendre.usd_xof_rate` | 600 | F CFA pour 1 $ (tableau de bord : coût IA comparé aux ventes) |
+| `comprendre.wave_link` | — | Lien marchand Wave des achats de quiz IA (sinon celui de la société) |
+| `comprendre.company_id` | société principale | Société qui encaisse les achats |
 
 ## Paramètres système
 

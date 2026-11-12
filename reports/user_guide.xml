@@ -470,7 +470,7 @@
             <ol>
             <li>Ouvrez <strong>Réglages → Quiz IA → Acheter des quiz IA</strong>.
             </li>
-            <li>Les offres s'affichent : leur nom, le nombre de quiz IA (<em>30 quiz IA</em>), le prix (<em>2 500 F CFA</em>) et la durée de validité (<em>valables 180 jours</em>).
+            <li>Les offres s'affichent : leur nom, le nombre de quiz IA (<em>30 quiz IA</em>), le prix (<em>2 500 F CFA</em>), le <strong>prix d'un quiz</strong> (<em>soit 83 F CFA le quiz</em>), l'<strong>économie</strong> par rapport à la plus petite offre (<em>−20 % par quiz</em>) et la durée de validité (<em>valables 180 jours</em>). Des étiquettes aident à choisir : <strong>Le plus choisi</strong>, <strong>Meilleur prix</strong> et surtout <strong>Conseillé pour vous</strong>.
             </li>
             <li>Touchez <strong>Payer avec Wave</strong> sous l'offre choisie, puis confirmez. L'application <strong>Wave</strong> s'ouvre, au bon montant : payez comme d'habitude.
             </li>
@@ -478,6 +478,9 @@
             </li>
             <li>Dès que le paiement est confirmé, l'application l'annonce : <em>« Paiement confirmé : 30 quiz IA ajoutés. »</em> Les quiz s'ajoutent à votre quota, sans code à saisir (vous verrez une ligne <em>Code …</em> dans <strong>Réglages → Quiz IA</strong>). L'IA est activée si elle ne l'était pas.
             </li></ol>
+            <p><strong>L'offre conseillée pour vous</strong></p>
+            <p>Comprendre regarde combien de quiz IA vous avez voulus <strong>en plus du quota gratuit</strong> ces 30 derniers jours, par exemple : <em>« Ces 30 derniers jours, vous avez voulu 12 quiz IA de plus que le quota gratuit. Conseil : Étude, de quoi tenir environ 3 mois sans quiz perdus. »</em> L'offre conseillée couvre environ 3 mois de ce besoin, et jamais plus que ce que vous utiliserez avant sa date limite.</p>
+            <p>Si les quiz gratuits vous ont suffi, l'écran le dit franchement : <em>« Ces 30 derniers jours, vos 5 quiz IA gratuits par jour ont suffi. »</em> Un achat ne sert alors que les jours où vous en voulez plus, puisque les quiz gratuits passent toujours en premier.</p>
             <p><strong>Combien de temps pour la confirmation ?</strong></p>
             <ul>
             <li>Le plus souvent, Wave confirme <strong>en quelques instants</strong> : <em>« Wave confirme le paiement en quelques instants… »</em>.

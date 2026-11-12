@@ -4,3 +4,4 @@ from . import test_guide
 from . import test_ai_code
 from . import test_purchase
 from . import test_dashboard
+from . import test_pricing

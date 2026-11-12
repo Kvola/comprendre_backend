@@ -170,7 +170,9 @@ class ComprendreAiRequest(models.Model):
     - ``pending`` : réservée, appel à Claude en cours (compte dans le quota) ;
     - ``done`` : quiz livré (compte dans le quota) ;
     - ``rejected`` : Claude a répondu (appel facturé) mais rien d'utilisable — plafonné par jour ;
-    - ``failed`` : l'appel n'a pas abouti (service indisponible, réseau…) — rien de facturé.
+    - ``failed`` : l'appel n'a pas abouti (service indisponible, réseau…) — rien de facturé ;
+    - ``refused`` : quota du jour atteint, sans code IA pour payer (aucun appel) — mesure le besoin
+      au-delà du gratuit, pour conseiller une offre.
     """
     _name = 'comprendre.ai.request'
     _description = "Demande de quiz IA"
@@ -182,7 +184,7 @@ class ComprendreAiRequest(models.Model):
     ip_hash = fields.Char("IP (empreinte)", index=True)
     day = fields.Date("Jour", required=True, index=True, default=fields.Date.context_today)
     state = fields.Selection([('pending', "En cours"), ('done', "Réussie"), ('failed', "Échouée"),
-                              ('rejected', "Écartée")],
+                              ('rejected', "Écartée"), ('refused', "Quota atteint")],
                              required=True, default='failed', index=True)
     lang = fields.Char("Langue")
     chars = fields.Integer("Caractères")
@@ -410,6 +412,9 @@ class ComprendreAiRequest(models.Model):
                     code = candidate
                     break
             if not code:
+                # Trace de la demande non servie (aucun appel, aucun coût) : le besoin au-delà du gratuit.
+                self.create({'device_id': device.id, 'ip_hash': ip_hash, 'lang': lang, 'chars': len(text),
+                             'state': 'refused', 'error': _("Quota du jour atteint.")})
                 raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
         # Le plafond par réseau protège le quota gratuit ; un code a déjà son propre crédit
         # (une classe entière sur le même Wi-Fi ne doit pas être bloquée).
