@@ -8,6 +8,8 @@ import re
 import time
 import unicodedata
 
+from dateutil.relativedelta import relativedelta
+
 from odoo import _, api, fields, models
 from odoo.modules import module as odoo_module
 from odoo.exceptions import UserError
@@ -51,11 +53,13 @@ def price_of(model):
 class Refusal(UserError):
     """Refus avec un code machine (``reason``) : l'application affiche son propre message traduit."""
 
-    def __init__(self, message, reason, usage=None):
+    def __init__(self, message, reason, usage=None, **details):
         super().__init__(message)
         self.reason = reason
         # (jetons entrée, jetons sortie, modèle) quand l'appel a eu lieu et a été facturé.
         self.usage = usage
+        # Précisions pour l'application (ex. ``transfers_left``), renvoyées avec le motif.
+        self.details = details
 
 
 MIN_VALID_QUESTIONS = 3
@@ -136,6 +140,12 @@ class ComprendreDevice(models.Model):
     def _compute_request_count(self):
         for d in self:
             d.request_count = len(d.request_ids)
+
+    @api.depends('key_hash')
+    def _compute_display_name(self):
+        for d in self:
+            # Anonyme : un numéro et le début de l'empreinte suffisent à le reconnaître.
+            d.display_name = _("Appareil n° %(id)s · %(hash)s", id=d.id, hash=(d.key_hash or '')[:8]) if d.id else _("Appareil")
 
     @api.model
     def _for_key(self, device_key):
@@ -224,6 +234,25 @@ class ComprendreAiRequest(models.Model):
         return codes.sorted(lambda c: (c.date_expiry or far, c.id))
 
     @api.model
+    def _all_device_codes(self, device):
+        """Codes du téléphone pour l'écran « Mes codes IA » : en cours d'abord (ordre d'utilisation),
+        puis les terminés récents (un code terminé depuis longtemps n'encombre plus la liste)."""
+        from .ai_code import ENDED_VISIBLE_DAYS  # noqa: PLC0415
+        codes = device.code_activation_ids.code_id.with_context(active_test=False)
+        far = fields.Date.from_string('9999-12-31')
+        horizon = fields.Date.context_today(self) - relativedelta(days=ENDED_VISIBLE_DAYS)
+        live, ended = [], []
+        for code in codes.sorted(lambda c: (c.date_expiry or far, c.id)):
+            if code._live_state() == 'active':
+                live.append(code)
+            else:
+                ended_on = max(filter(None, [code.date_expiry, code.last_used and code.last_used.date(),
+                                             code.write_date and code.write_date.date()]), default=None)
+                if not ended_on or ended_on >= horizon:
+                    ended.append(code)
+        return live + ended
+
+    @api.model
     def _code_remaining_today(self, device):
         """Quiz IA que les codes de l'appareil peuvent encore payer aujourd'hui."""
         total = 0
@@ -261,6 +290,8 @@ class ComprendreAiRequest(models.Model):
             'free_remaining': free,
             'code_remaining': from_codes,
             'codes': [code._info(device) for code in self._device_codes(device)],
+            # 1.5 : tous les codes du téléphone, terminés compris (désactivés, depuis moins de 90 jours).
+            'all_codes': [code._info(device) for code in self._all_device_codes(device)],
             'daily': self._int_param('comprendre.daily_quota', 5),
             'max_chars': self._int_param('comprendre.max_chars', 30000),
             'enabled': self._param('comprendre.enabled', '1') not in ('0', 'False', 'false'),

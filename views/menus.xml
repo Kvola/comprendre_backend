@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tableau de bord : page d'accueil de l'application Comprendre. -->
+    <record id="action_dashboard" model="ir.actions.client">
+        <field name="name">Tableau de bord</field>
+        <field name="tag">comprendre_dashboard</field>
+    </record>
+
+    <!-- Réglages : Paramètres → Comprendre. -->
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.comprendre</field>
+        <field name="model">res.config.settings</field>
+        <field name="priority" eval="90"/>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Comprendre" string="Comprendre" name="comprendre_backend"
+                     groups="comprendre_backend.group_comprendre_manager">
+                    <block title="Service de quiz IA" name="comprendre_service">
+                        <setting string="Service ouvert" help="Fermé : l'application crée tous ses quiz sur le téléphone, hors ligne.">
+                            <field name="comprendre_enabled"/>
+                        </setting>
+                        <setting string="Clé API Anthropic"
+                                 help="Créée dans la console Anthropic (API Keys). Vide : la variable d'environnement ANTHROPIC_API_KEY du serveur est utilisée.">
+                            <field name="comprendre_api_key" password="True" placeholder="sk-ant-…"/>
+                            <field name="comprendre_key_from_env" invisible="1"/>
+                            <div class="text-muted small mt-1" invisible="comprendre_api_key or not comprendre_key_from_env">
+                                <i class="fa fa-check text-success"/> Clé fournie par la variable d'environnement du serveur.
+                            </div>
+                            <div class="text-danger small mt-1" invisible="comprendre_api_key or comprendre_key_from_env">
+                                <i class="fa fa-exclamation-triangle"/> Aucune clé : aucun quiz IA ne peut être créé.
+                            </div>
+                        </setting>
+                        <setting string="Modèle Claude" help="Identifiant du modèle (ex. claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5). Le coût de chaque quiz en dépend.">
+                            <field name="comprendre_model"/>
+                        </setting>
+                        <setting string="Taux du dollar" help="F CFA pour 1 dollar : sert au tableau de bord pour comparer le coût IA aux ventes.">
+                            <field name="comprendre_usd_rate"/>
+                        </setting>
+                    </block>
+                    <block title="Quotas et protections" name="comprendre_quotas">
+                        <setting string="Quiz IA gratuits par jour" help="Par téléphone. Les codes IA s'ajoutent à ce quota.">
+                            <field name="comprendre_daily_quota"/>
+                        </setting>
+                        <setting string="Plafond par réseau" help="Quiz IA gratuits par jour depuis une même adresse IP (contre les abus). Les codes IA n'y sont pas soumis.">
+                            <field name="comprendre_ip_cap"/>
+                        </setting>
+                        <setting string="Échecs facturés par jour" help="Au-delà, le téléphone crée ses quiz hors ligne jusqu'au lendemain.">
+                            <field name="comprendre_rejected_cap"/>
+                        </setting>
+                        <setting string="Longueur maximale d'un texte" help="En caractères. L'application découpe les textes plus longs en parties.">
+                            <field name="comprendre_max_chars"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+    <record id="action_settings" model="ir.actions.act_window">
+        <field name="name">Réglages</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'comprendre_backend', 'bin_size': False}</field>
+    </record>
+
+    <menuitem id="menu_root" name="Comprendre" sequence="60" action="action_dashboard"
+              groups="comprendre_backend.group_comprendre_manager" web_icon="comprendre_backend,static/description/icon.png"/>
+    <menuitem id="menu_dashboard" name="Tableau de bord" parent="menu_root" action="action_dashboard" sequence="1"/>
+
+    <menuitem id="menu_code_root" name="Codes IA" parent="menu_root" sequence="10"/>
+    <menuitem id="menu_codes" name="Codes" parent="menu_code_root" action="action_codes" sequence="1"/>
+    <menuitem id="menu_batches" name="Lots" parent="menu_code_root" action="action_batches" sequence="2"/>
+    <menuitem id="menu_code_generate" name="Créer des codes IA" parent="menu_code_root" action="action_code_generate" sequence="3"/>
+
+    <menuitem id="menu_shop" name="Ventes de quiz IA" parent="menu_root" sequence="20"/>
+    <menuitem id="menu_orders_to_validate" name="Achats à valider" parent="menu_shop" action="action_orders_to_validate" sequence="1"/>
+    <menuitem id="menu_orders" name="Tous les achats" parent="menu_shop" action="action_orders" sequence="2"/>
+    <menuitem id="menu_packs" name="Offres" parent="menu_shop" action="action_packs" sequence="3"/>
+
+    <menuitem id="menu_usage" name="Suivi de l'IA" parent="menu_root" sequence="30"/>
+    <menuitem id="menu_requests" name="Demandes de quiz IA" parent="menu_usage" action="action_requests" sequence="1"/>
+    <menuitem id="menu_devices" name="Appareils" parent="menu_usage" action="action_devices" sequence="2"/>
+
+    <menuitem id="menu_config" name="Configuration" parent="menu_root" sequence="90"/>
+    <menuitem id="menu_settings" name="Réglages" parent="menu_config" action="action_settings" sequence="1"
+              groups="base.group_system"/>
+</odoo>

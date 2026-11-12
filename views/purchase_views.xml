@@ -129,8 +129,4 @@
         <field name="context">{'search_default_to_validate': 1}</field>
     </record>
 
-    <menuitem id="menu_shop" name="Ventes de quiz IA" parent="menu_root" sequence="17"/>
-    <menuitem id="menu_orders_to_validate" name="Achats à valider" parent="menu_shop" action="action_orders_to_validate" sequence="1"/>
-    <menuitem id="menu_orders" name="Tous les achats" parent="menu_shop" action="action_orders" sequence="2"/>
-    <menuitem id="menu_packs" name="Offres" parent="menu_shop" action="action_packs" sequence="3"/>
 </odoo>

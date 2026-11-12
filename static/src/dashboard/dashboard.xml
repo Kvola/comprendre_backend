@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="comprendre_backend.Dashboard">
+        <div class="o_action o_comprendre_dashboard h-100 overflow-auto">
+            <div class="o_cd_wrap">
+                <!-- En-tête : titre, période, actions -->
+                <div class="o_cd_head">
+                    <div>
+                        <h2 class="mb-0">Tableau de bord</h2>
+                        <div class="text-muted small" t-if="state.data">
+                            Du <t t-out="date(state.data.start)"/> au <t t-out="date(state.data.today)"/>
+                            · modèle <code t-out="state.data.model"/>
+                        </div>
+                    </div>
+                    <div class="o_cd_tools">
+                        <div class="btn-group" role="group" aria-label="Période">
+                            <t t-foreach="[7, 30, 90]" t-as="d" t-key="d">
+                                <button type="button" class="btn btn-sm"
+                                        t-att-class="state.days === d ? 'btn-primary' : 'btn-outline-secondary'"
+                                        t-att-aria-pressed="state.days === d ? 'true' : 'false'"
+                                        t-on-click="() => this.setDays(d)"><t t-out="d"/> jours</button>
+                            </t>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="refresh"
+                                title="Actualiser" aria-label="Actualiser">
+                            <i t-att-class="'fa fa-refresh' + (state.loading ? ' fa-spin' : '')"/>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary" t-on-click="createCodes">
+                            <i class="fa fa-plus me-1"/>Créer des codes IA
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" t-on-click="openSettings"
+                                title="Réglages" aria-label="Réglages"><i class="fa fa-cog"/></button>
+                    </div>
+                </div>
+
+                <div t-if="state.error" class="alert alert-danger" role="alert" t-out="state.error"/>
+
+                <t t-set="d" t-value="state.data"/>
+                <t t-if="d">
+                    <!-- Alertes : ce qui demande une action -->
+                    <t t-foreach="d.alerts" t-as="a" t-key="a_index">
+                        <div t-att-class="'alert d-flex align-items-center gap-2 py-2 alert-' + a.level" role="alert">
+                            <i t-att-class="'fa ' + (a.level === 'danger' ? 'fa-times-circle' : 'fa-exclamation-triangle')"/>
+                            <span class="flex-grow-1" t-out="a.text"/>
+                            <button t-if="a.action" type="button" class="btn btn-sm btn-link p-0"
+                                    t-on-click="() => this.openAlert(a)">Voir</button>
+                        </div>
+                    </t>
+
+                    <!-- Quiz IA -->
+                    <h5 class="o_cd_section">Quiz IA</h5>
+                    <div class="o_cd_kpis">
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openRequests([['state', '=', 'done']], 'Quiz IA réussis')">
+                            <span class="o_cd_label">Quiz IA créés</span>
+                            <span class="o_cd_value" t-out="int(d.usage.done)"/>
+                            <span class="o_cd_sub">dont <t t-out="int(d.usage.done_today)"/> aujourd'hui</span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openRequests([['state', '=', 'done'], ['code_id', '!=', false]], 'Quiz IA payés par un code')">
+                            <span class="o_cd_label">Gratuits / codes IA</span>
+                            <span class="o_cd_value"><t t-out="int(d.usage.free)"/> / <t t-out="int(d.usage.coded)"/></span>
+                            <span class="o_cd_sub"><t t-if="d.usage.done"><t t-out="pct(100 - freeShare)"/> payés par un code</t><t t-else="">aucun quiz IA sur la période</t></span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openRequests([['cost', '>', 0]], 'Coût des quiz IA')">
+                            <span class="o_cd_label">Coût IA estimé</span>
+                            <span class="o_cd_value" t-out="usd(d.usage.cost)"/>
+                            <span class="o_cd_sub"><t t-if="d.convert">≈ <t t-out="local(d.usage.cost * d.rate)"/></t><t t-if="d.convert and d.usage.done"> · </t><t t-if="d.usage.done"><t t-out="usdFine(d.usage.cost_per_quiz)"/> par quiz</t></span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openRequests([['state', 'in', ['failed', 'rejected']]], 'Échecs')">
+                            <span class="o_cd_label">Échecs</span>
+                            <span t-att-class="'o_cd_value' + (d.usage.failure_rate > 20 ? ' text-danger' : '')" t-out="pct(d.usage.failure_rate)"/>
+                            <span class="o_cd_sub"><t t-out="int(d.usage.failed)"/> sans réponse · <t t-out="int(d.usage.rejected)"/> écartés</span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.open('comprendre.device', 'Appareils', [], {}, ['list'])">
+                            <span class="o_cd_label">Appareils actifs</span>
+                            <span class="o_cd_value" t-out="int(d.usage.devices)"/>
+                            <span class="o_cd_sub">au moins un quiz IA · <t t-out="nf1(d.usage.duration_s)"/> s en moyenne</span>
+                        </button>
+                    </div>
+
+                    <div class="o_cd_panel">
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="mb-0 flex-grow-1">Quiz IA par jour</h6>
+                            <button type="button" class="btn btn-sm btn-link" t-on-click="toggleTable">
+                                <t t-if="state.table">Voir les graphiques</t><t t-else="">Voir le tableau</t>
+                            </button>
+                        </div>
+                        <t t-if="!state.table">
+                            <div class="o_cd_charts">
+                                <div class="o_cd_chart"><canvas t-ref="usageChart" role="img"
+                                     aria-label="Quiz IA réussis par jour, quota gratuit et codes IA"/></div>
+                                <div>
+                                    <div class="small text-muted mb-1">Coût estimé par jour ($)</div>
+                                    <div class="o_cd_chart"><canvas t-ref="costChart" role="img" aria-label="Coût estimé par jour"/></div>
+                                </div>
+                            </div>
+                        </t>
+                        <div t-else="" class="table-responsive o_cd_table_scroll">
+                            <table class="table table-sm mb-0">
+                                <thead><tr><th>Jour</th><th class="text-end">Gratuits</th><th class="text-end">Codes IA</th>
+                                    <th class="text-end">Échecs</th><th class="text-end">Coût ($)</th></tr></thead>
+                                <tbody>
+                                    <t t-foreach="d.series.slice().reverse()" t-as="p" t-key="p.day">
+                                        <tr>
+                                            <td t-out="date(p.day)"/>
+                                            <td class="text-end" t-out="int(p.free)"/>
+                                            <td class="text-end" t-out="int(p.coded)"/>
+                                            <td class="text-end" t-out="int(p.failed)"/>
+                                            <td class="text-end" t-out="usdFine(p.cost)"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Codes IA -->
+                    <h5 class="o_cd_section">Codes IA</h5>
+                    <div class="o_cd_kpis">
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openCodes('active', 'Codes IA en cours')">
+                            <span class="o_cd_label">En cours</span>
+                            <span class="o_cd_value" t-out="int(d.codes.active)"/>
+                            <span class="o_cd_sub">activés et utilisables</span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openCodes('new', 'Codes IA pas encore utilisés')">
+                            <span class="o_cd_label">Pas encore utilisés</span>
+                            <span class="o_cd_value" t-out="int(d.codes.new)"/>
+                            <span class="o_cd_sub"><t t-out="int(d.codes.dormant)"/> distribués depuis plus de 30 jours</span>
+                        </button>
+                        <div class="o_cd_kpi o_cd_static">
+                            <span class="o_cd_label">Quiz IA encore dus</span>
+                            <span class="o_cd_value" t-out="int(d.codes.outstanding)"/>
+                            <span class="o_cd_sub"><t t-if="d.usage.cost_per_quiz">≈ <t t-out="local(d.codes.outstanding * d.usage.cost_per_quiz * d.rate)"/> de coût IA à venir</t><t t-else="">sur les codes valables</t></span>
+                        </div>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openCodes('expiring', 'Codes IA qui expirent bientôt')">
+                            <span class="o_cd_label">Expirent sous 14 jours</span>
+                            <span t-att-class="'o_cd_value' + (d.codes.expiring_count ? ' text-warning' : '')" t-out="int(d.codes.expiring_count)"/>
+                            <span class="o_cd_sub">avec des quiz restants</span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openCodes('exhausted', 'Codes IA épuisés')">
+                            <span class="o_cd_label">Épuisés / expirés</span>
+                            <span class="o_cd_value"><t t-out="int(d.codes.exhausted)"/> / <t t-out="int(d.codes.expired)"/></span>
+                            <span class="o_cd_sub"><t t-out="int(d.codes.disabled)"/> désactivés</span>
+                        </button>
+                    </div>
+
+                    <div class="o_cd_grid">
+                        <div class="o_cd_panel">
+                            <h6>Lots de codes</h6>
+                            <p t-if="!d.batches.length" class="text-muted small mb-0">
+                                Aucun lot. « Créer des codes IA » en crée un (une classe, un partenaire…).
+                            </p>
+                            <t t-foreach="d.batches" t-as="b" t-key="b.id">
+                                <button type="button" class="o_cd_row" t-on-click="() => this.openBatch(b.id)">
+                                    <span class="o_cd_row_main">
+                                        <span class="fw-semibold" t-out="b.name"/>
+                                        <span class="small text-muted">
+                                            <t t-out="b.activated"/> codes activés sur <t t-out="b.codes"/>
+                                            · <t t-out="int(b.used)"/> quiz sur <t t-out="int(b.credits)"/>
+                                            <t t-if="b.expiry"> · jusqu'au <t t-out="date(b.expiry)"/></t>
+                                        </span>
+                                    </span>
+                                    <span class="o_cd_meter" role="meter" t-att-aria-valuenow="b.usage" aria-valuemin="0" aria-valuemax="100"
+                                          t-att-aria-label="'Utilisation ' + b.usage + ' %'">
+                                        <span class="o_cd_meter_fill" t-att-style="'width:' + Math.min(100, b.usage) + '%'"/>
+                                    </span>
+                                    <span class="o_cd_meter_val" t-out="pct(b.usage)"/>
+                                </button>
+                            </t>
+                        </div>
+                        <div class="o_cd_panel">
+                            <h6>À surveiller</h6>
+                            <p t-if="!d.codes.expiring.length and !d.codes.low.length" class="text-muted small mb-0">
+                                Rien à signaler : aucun code n'expire bientôt avec des quiz restants.
+                            </p>
+                            <t t-foreach="d.codes.expiring" t-as="c" t-key="'e' + c.id">
+                                <button type="button" class="o_cd_row" t-on-click="() => this.openCode(c.id)">
+                                    <i class="fa fa-hourglass-half text-warning" aria-hidden="true"/>
+                                    <span class="o_cd_row_main">
+                                        <span><code t-out="c.code"/> <span class="small text-muted" t-out="c.who"/></span>
+                                        <span class="small">
+                                            Expire <t t-out="daysLeft(c.days_left)"/> · <t t-out="c.remaining"/> quiz IA restants
+                                            <t t-if="!c.devices"> · jamais activé</t>
+                                        </span>
+                                    </span>
+                                </button>
+                            </t>
+                            <t t-foreach="d.codes.low" t-as="c" t-key="'l' + c.id">
+                                <button type="button" class="o_cd_row" t-on-click="() => this.openCode(c.id)">
+                                    <i class="fa fa-battery-quarter text-muted" aria-hidden="true"/>
+                                    <span class="o_cd_row_main">
+                                        <span><code t-out="c.code"/> <span class="small text-muted" t-out="c.who"/></span>
+                                        <span class="small">Presque épuisé : <t t-out="c.remaining"/> sur <t t-out="c.credits"/></span>
+                                    </span>
+                                </button>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Ventes -->
+                    <h5 class="o_cd_section">Ventes de quiz IA</h5>
+                    <div class="o_cd_kpis">
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.open('comprendre.ai.order', 'Achats payés', [['state', '=', 'done'], ['paid_at', '>=', d.start + ' 00:00:00']])">
+                            <span class="o_cd_label">Encaissé</span>
+                            <span class="o_cd_value" t-out="local(d.sales.revenue)"/>
+                            <span class="o_cd_sub"><t t-out="int(d.sales.paid)"/> achats · <t t-out="int(d.sales.credits_sold)"/> quiz IA vendus</span>
+                        </button>
+                        <div class="o_cd_kpi o_cd_static">
+                            <span class="o_cd_label">Coût IA des codes vendus</span>
+                            <span class="o_cd_value" t-out="local(d.sales.cost_sold_local)"/>
+                            <span class="o_cd_sub">marge ≈ <t t-out="local(margin)"/><t t-if="d.convert"> (taux <t t-out="int(d.rate)"/> pour 1 $)</t></span>
+                        </div>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.openAlert({action: 'to_validate'})">
+                            <span class="o_cd_label">Achats à valider</span>
+                            <span t-att-class="'o_cd_value' + (d.sales.to_validate ? ' text-warning' : '')" t-out="int(d.sales.to_validate)"/>
+                            <span class="o_cd_sub"><t t-out="int(d.sales.drafts)"/> achats non payés en cours</span>
+                        </button>
+                        <button type="button" class="o_cd_kpi" t-on-click="() => this.open('comprendre.ai.pack', 'Offres', [], {}, ['list', 'form'])">
+                            <span class="o_cd_label">Offres en vente</span>
+                            <span t-att-class="'o_cd_value' + (d.sales.packs_on_sale ? '' : ' text-muted')" t-out="int(d.sales.packs_on_sale)"/>
+                            <span class="o_cd_sub"><t t-if="d.sales.packs_on_sale">visibles dans l'application</t><t t-else="">la vente est fermée</t></span>
+                        </button>
+                    </div>
+                </t>
+                <div t-elif="state.loading" class="text-muted p-4"><i class="fa fa-spinner fa-spin me-2"/>Chargement…</div>
+            </div>
+        </div>
+    </t>
+</templates>

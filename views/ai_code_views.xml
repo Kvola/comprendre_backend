@@ -1,57 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="action_code_generate_in_batch" model="ir.actions.act_window">
+        <field name="name">Ajouter des codes au lot</field>
+        <field name="res_model">comprendre.ai.code.generate</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ================================================================= -->
+    <!-- Codes IA                                                           -->
+    <!-- ================================================================= -->
     <record id="view_code_list" model="ir.ui.view">
         <field name="name">comprendre.ai.code.list</field>
         <field name="model">comprendre.ai.code</field>
         <field name="arch" type="xml">
             <list decoration-muted="state in ('disabled', 'expired')" decoration-warning="state == 'exhausted'"
                   decoration-success="state == 'active'">
-                <field name="code"/>
-                <field name="name"/>
-                <field name="credits" string="Offerts"/>
-                <field name="used"/>
-                <field name="remaining"/>
+                <header>
+                    <button name="action_update" type="object" string="Modifier" class="btn-primary"/>
+                    <button name="action_print_cards" type="object" string="Imprimer les cartes"/>
+                </header>
+                <field name="code" class="font-monospace" width="150px"/>
+                <field name="name" optional="show"/>
+                <field name="batch_id" optional="show"/>
+                <field name="partner_id" optional="hide"/>
+                <field name="origin" optional="hide"/>
+                <field name="credits" string="Offerts" sum="Total"/>
+                <field name="used" sum="Total"/>
+                <field name="remaining" sum="Total"/>
+                <field name="usage_percent" widget="progressbar" string="Utilisation" optional="show"/>
                 <field name="device_count" string="Appareils"/>
-                <field name="max_devices" string="Max."/>
+                <field name="max_devices" string="Max." optional="show"/>
                 <field name="daily_limit" optional="hide"/>
                 <field name="date_expiry"/>
-                <field name="cost" optional="show"/>
-                <field name="state" widget="badge"/>
+                <field name="last_used" optional="show"/>
+                <field name="cost" optional="hide" sum="Total"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'"
+                       decoration-info="state == 'new'" decoration-warning="state == 'exhausted'"
+                       decoration-muted="state in ('expired', 'disabled')"/>
                 <field name="create_date" string="Créé le" optional="hide"/>
             </list>
         </field>
     </record>
+
     <record id="view_code_form" model="ir.ui.view">
         <field name="name">comprendre.ai.code.form</field>
         <field name="model">comprendre.ai.code</field>
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_disable" type="object" string="Désactiver" invisible="not active"
+                    <button name="action_update" type="object" string="Ajouter des quiz / prolonger" class="btn-primary"
+                            invisible="not id"/>
+                    <button name="action_print_cards" type="object" string="Imprimer la carte" invisible="not id"/>
+                    <button name="action_disable" type="object" string="Désactiver" invisible="not active or not id"
                             confirm="Le code ne pourra plus servir (les quiz déjà faits restent). Continuer ?"/>
                     <button name="action_enable" type="object" string="Réactiver" invisible="active"/>
                     <field name="state" widget="statusbar" statusbar_visible="new,active,exhausted"/>
                 </header>
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_requests" type="object" class="oe_stat_button" icon="fa-magic">
+                            <field name="used" widget="statinfo" string="Quiz IA"/>
+                        </button>
+                    </div>
                     <widget name="web_ribbon" title="Désactivé" bg_color="text-bg-danger" invisible="active"/>
+                    <widget name="web_ribbon" title="Expiré" bg_color="text-bg-secondary" invisible="state != 'expired'"/>
+                    <widget name="web_ribbon" title="Épuisé" bg_color="text-bg-warning" invisible="state != 'exhausted'"/>
                     <field name="active" invisible="1"/>
                     <div class="oe_title">
                         <label for="code"/>
-                        <h1><field name="code" class="font-monospace"/></h1>
+                        <h1><field name="code" class="font-monospace" readonly="id and used"/></h1>
                     </div>
                     <group>
-                        <group string="Ce que donne le code">
+                        <group string="Pour qui">
                             <field name="name"/>
+                            <field name="partner_id"/>
+                            <field name="batch_id"/>
+                            <field name="origin" invisible="origin != 'purchase'"/>
+                            <field name="order_ids" widget="many2many_tags" invisible="not order_ids" string="Achat"/>
+                        </group>
+                        <group string="Ce que donne le code">
                             <field name="credits"/>
                             <field name="daily_limit"/>
                             <field name="max_devices"/>
-                            <field name="date_expiry"/>
+                            <label for="date_expiry"/>
+                            <div class="o_row">
+                                <field name="date_expiry"/>
+                                <span class="text-muted" invisible="not date_expiry or state in ('expired', 'disabled')">
+                                    (<field name="days_left" class="oe_inline"/> jours)
+                                </span>
+                            </div>
+                            <label for="transfers_allowed" invisible="max_devices != 1"/>
+                            <div class="o_row" invisible="max_devices != 1">
+                                <field name="transfers_allowed"/>
+                                <span class="text-muted">déjà faits : <field name="transfer_count" class="oe_inline"/></span>
+                            </div>
                         </group>
-                        <group string="Utilisation">
-                            <field name="used"/>
+                    </group>
+                    <group string="Utilisation">
+                        <group>
+                            <field name="usage_percent" widget="progressbar" string="Utilisation"/>
                             <field name="remaining"/>
                             <field name="device_count"/>
+                        </group>
+                        <group>
+                            <field name="last_used"/>
                             <field name="cost"/>
+                            <field name="create_date" string="Créé le"/>
                         </group>
                     </group>
                     <notebook>
@@ -68,7 +123,7 @@
                         </page>
                         <page string="Quiz IA" name="requests">
                             <field name="request_ids" readonly="1">
-                                <list>
+                                <list limit="20">
                                     <field name="create_date" string="Le"/>
                                     <field name="device_id"/>
                                     <field name="state" widget="badge"/>
@@ -78,11 +133,16 @@
                                 </list>
                             </field>
                         </page>
+                        <page string="Notes" name="notes">
+                            <field name="note" placeholder="À qui le code a été remis, quand, pourquoi…"/>
+                        </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
+
     <record id="view_code_search" model="ir.ui.view">
         <field name="name">comprendre.ai.code.search</field>
         <field name="model">comprendre.ai.code</field>
@@ -90,37 +150,190 @@
             <search>
                 <field name="code"/>
                 <field name="name"/>
+                <field name="batch_id"/>
+                <field name="partner_id"/>
+                <filter name="st_active" string="En cours" domain="[('state', '=', 'active')]"/>
+                <filter name="st_new" string="Pas encore utilisés" domain="[('state', '=', 'new')]"/>
+                <filter name="st_exhausted" string="Épuisés" domain="[('state', '=', 'exhausted')]"/>
+                <filter name="st_expired" string="Expirés" domain="[('state', '=', 'expired')]"/>
+                <separator/>
+                <filter name="expiring" string="Expirent sous 14 jours"
+                        domain="[('date_expiry', '&gt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('date_expiry', '&lt;=', (context_today() + relativedelta(days=14)).strftime('%Y-%m-%d')),
+                                 ('remaining', '&gt;', 0)]"/>
+                <filter name="almost" string="Presque épuisés (80 % et plus)"
+                        domain="[('usage_percent', '&gt;=', 80), ('remaining', '&gt;', 0)]"/>
+                <filter name="shared" string="Partagés (plusieurs appareils)" domain="[('max_devices', '&gt;', 1)]"/>
+                <separator/>
+                <filter name="purchased" string="Achetés" domain="[('origin', '=', 'purchase')]"/>
+                <filter name="offered" string="Offerts" domain="[('origin', '!=', 'purchase')]"/>
+                <separator/>
                 <filter name="inactive" string="Désactivés" domain="[('active', '=', False)]"/>
                 <group>
+                    <filter name="by_batch" string="Lot" context="{'group_by': 'batch_id'}"/>
+                    <filter name="by_origin" string="Origine" context="{'group_by': 'origin'}"/>
                     <filter name="by_name" string="Bénéficiaire" context="{'group_by': 'name'}"/>
+                    <filter name="by_expiry" string="Date limite" context="{'group_by': 'date_expiry:month'}"/>
                 </group>
             </search>
         </field>
     </record>
+
     <record id="action_codes" model="ir.actions.act_window">
         <field name="name">Codes IA</field>
         <field name="res_model">comprendre.ai.code</field>
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Créez un code IA</p>
+            <p class="o_view_nocontent_smiling_face">Créez des codes IA</p>
             <p>Un code IA donne des quiz IA en plus du quota gratuit du jour. La personne le saisit dans
-               l'application : Réglages → Quiz IA → Code IA.</p>
+               l'application : Réglages → Quiz IA → J'ai un code IA. Imprimez des cartes pour les distribuer.</p>
         </field>
     </record>
 
+    <!-- ================================================================= -->
+    <!-- Lots                                                               -->
+    <!-- ================================================================= -->
+    <record id="view_batch_list" model="ir.ui.view">
+        <field name="name">comprendre.ai.code.batch.list</field>
+        <field name="model">comprendre.ai.code.batch</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id" optional="show"/>
+                <field name="code_count"/>
+                <field name="activated_count"/>
+                <field name="activation_percent" widget="progressbar" string="Activés"/>
+                <field name="credits"/>
+                <field name="used"/>
+                <field name="usage_percent" widget="progressbar" string="Utilisation"/>
+                <field name="date_expiry"/>
+                <field name="last_used" optional="show"/>
+                <field name="cost" optional="hide"/>
+                <field name="create_date" string="Créé le" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_batch_form" model="ir.ui.view">
+        <field name="name">comprendre.ai.code.batch.form</field>
+        <field name="model">comprendre.ai.code.batch</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="%(action_code_generate_in_batch)d" type="action" string="Ajouter des codes"
+                            class="btn-primary" context="{'default_batch_id': id}" invisible="not id"/>
+                    <button name="action_update" type="object" string="Modifier tous les codes" invisible="not id"/>
+                    <button name="action_print_cards" type="object" string="Imprimer les cartes" invisible="not id"/>
+                    <button name="action_disable" type="object" string="Désactiver le lot" invisible="not enabled_count"
+                            confirm="Tous les codes du lot cesseront de fonctionner (les quiz déjà faits restent). Continuer ?"/>
+                    <button name="action_enable" type="object" string="Réactiver les codes désactivés"
+                            invisible="not disabled_count"/>
+                    <field name="enabled_count" invisible="1"/>
+                    <field name="disabled_count" invisible="1"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_codes" type="object" class="oe_stat_button" icon="fa-key">
+                            <field name="code_count" widget="statinfo" string="Codes"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Ex. Lycée Classique — Terminale A"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="date_expiry"/>
+                            <field name="last_used"/>
+                        </group>
+                        <group>
+                            <field name="activation_percent" widget="progressbar" string="Codes activés"/>
+                            <field name="usage_percent" widget="progressbar" string="Quiz utilisés"/>
+                            <field name="credits"/>
+                            <field name="used"/>
+                            <field name="remaining"/>
+                            <field name="cost"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Codes" name="codes">
+                            <field name="code_ids" readonly="1">
+                                <list decoration-muted="state in ('disabled', 'expired')" decoration-success="state == 'active'">
+                                    <field name="code" class="font-monospace"/>
+                                    <field name="name" optional="hide"/>
+                                    <field name="credits" string="Offerts"/>
+                                    <field name="used"/>
+                                    <field name="remaining"/>
+                                    <field name="device_count" string="Appareils"/>
+                                    <field name="date_expiry"/>
+                                    <field name="last_used"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="note"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_batch_search" model="ir.ui.view">
+        <field name="name">comprendre.ai.code.batch.search</field>
+        <field name="model">comprendre.ai.code.batch</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter name="archived" string="Archivés" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_batches" model="ir.actions.act_window">
+        <field name="name">Lots de codes IA</field>
+        <field name="res_model">comprendre.ai.code.batch</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Pas encore de lot</p>
+            <p>« Créer des codes IA » réunit les codes créés ensemble dans un lot (une classe, une école, un
+               partenaire) : vous suivez leur usage et les modifiez, désactivez ou imprimez d'un coup.</p>
+        </field>
+    </record>
+
+    <!-- ================================================================= -->
+    <!-- Assistants                                                         -->
+    <!-- ================================================================= -->
     <record id="view_code_generate_form" model="ir.ui.view">
         <field name="name">comprendre.ai.code.generate.form</field>
         <field name="model">comprendre.ai.code.generate</field>
         <field name="arch" type="xml">
             <form string="Créer des codes IA">
                 <group>
-                    <field name="quantity"/>
-                    <field name="name"/>
-                    <field name="credits"/>
-                    <field name="daily_limit"/>
-                    <field name="max_devices"/>
-                    <field name="date_expiry"/>
+                    <group string="Combien, pour qui">
+                        <field name="quantity"/>
+                        <field name="batch_id" options="{'no_create': True}"/>
+                        <field name="batch_name" invisible="batch_id" placeholder="Ex. Lycée Classique — Terminale A"/>
+                        <field name="partner_id"/>
+                        <field name="name" placeholder="Note sur chaque code (facultatif)"/>
+                        <field name="prefix" placeholder="Ex. LYC"/>
+                    </group>
+                    <group string="Ce que donne chaque code">
+                        <field name="credits"/>
+                        <field name="max_devices"/>
+                        <field name="daily_limit"/>
+                        <field name="expiry_mode" widget="radio"/>
+                        <field name="validity_days" invisible="expiry_mode != 'days'"/>
+                        <field name="date_expiry" invisible="expiry_mode != 'date'" required="expiry_mode == 'date'"/>
+                    </group>
                 </group>
+                <div class="alert alert-info mb-0" role="status">
+                    <field name="preview" readonly="1" nolabel="1"/>
+                </div>
                 <footer>
                     <button name="action_generate" type="object" string="Créer les codes" class="btn-primary"/>
                     <button special="cancel" string="Annuler"/>
@@ -135,6 +348,45 @@
         <field name="target">new</field>
     </record>
 
-    <menuitem id="menu_codes" name="Codes IA" parent="menu_root" action="action_codes" sequence="15"/>
-    <menuitem id="menu_code_generate" name="Créer des codes IA" parent="menu_root" action="action_code_generate" sequence="16"/>
+    <record id="view_code_update_form" model="ir.ui.view">
+        <field name="name">comprendre.ai.code.update.form</field>
+        <field name="model">comprendre.ai.code.update</field>
+        <field name="arch" type="xml">
+            <form string="Modifier des codes IA">
+                <div class="alert alert-info" role="status">
+                    <field name="code_count" class="oe_inline"/> code(s) concerné(s). Seuls les champs changés ci-dessous
+                    sont appliqués ; l'historique de chaque code garde la trace des modifications.
+                </div>
+                <group>
+                    <group string="Quiz et dates">
+                        <field name="add_credits"/>
+                        <field name="expiry_action" widget="radio"/>
+                        <field name="extend_days" invisible="expiry_action != 'extend'"/>
+                        <field name="date_expiry" invisible="expiry_action != 'set'" required="expiry_action == 'set'"/>
+                    </group>
+                    <group string="Plafonds et activation">
+                        <field name="change_daily"/>
+                        <field name="daily_limit" invisible="not change_daily"/>
+                        <field name="change_devices"/>
+                        <field name="max_devices" invisible="not change_devices"/>
+                        <field name="reset_transfers"/>
+                        <field name="activity" widget="radio"/>
+                    </group>
+                </group>
+                <field name="code_ids" invisible="1"/>
+                <footer>
+                    <button name="action_apply" type="object" string="Appliquer" class="btn-primary"/>
+                    <button special="cancel" string="Annuler"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_code_update" model="ir.actions.act_window">
+        <field name="name">Modifier des codes IA</field>
+        <field name="res_model">comprendre.ai.code.update</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_comprendre_ai_code"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
 </odoo>

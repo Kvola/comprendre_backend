@@ -65,14 +65,118 @@ class TestAiCode(TransactionCase):
 
     def test_redeem_binds_one_device(self):
         code = self.Code.create({'credits': 3})
-        self.assertEqual(self.Code._redeem(self.phone, code.code.lower().replace('-', ' ')), code)
-        self.assertEqual(self.Code._redeem(self.phone, code.code), code, "le même appareil peut le saisir à nouveau")
+        self.assertEqual(self.Code._redeem(self.phone, code.code.lower().replace('-', ' ')), (code, False))
+        self.assertEqual(self.Code._redeem(self.phone, code.code), (code, True), "le même appareil peut le saisir à nouveau")
         with self.assertRaises(UserError) as ctx:
             self.Code._redeem(self.other, code.code)
         self.assertEqual(ctx.exception.reason, 'code_taken')
         # Changement de téléphone : le gestionnaire libère la place.
         code.activation_ids.action_release()
-        self.assertEqual(self.Code._redeem(self.other, code.code), code)
+        self.assertEqual(self.Code._redeem(self.other, code.code), (code, False))
+
+    def test_transfer_by_holder(self):
+        code = self.Code.create({'credits': 5, 'transfers_allowed': 1})
+        self.Code._redeem(self.phone, code.code)
+        self.quiz(self.phone)  # gratuit
+        self.quiz(self.phone)  # sur le code
+        # Une application 1.4 ne sait pas transférer : ancien motif.
+        with self.assertRaises(UserError) as ctx:
+            self.Code._redeem(self.other, code.code)
+        self.assertEqual(ctx.exception.reason, 'code_taken')
+        # 1.5 : on propose, sans rien changer tant que ce n'est pas confirmé.
+        with self.assertRaises(UserError) as ctx:
+            self.Code._redeem(self.other, code.code, can_transfer=True)
+        self.assertEqual((ctx.exception.reason, ctx.exception.details), ('code_transferable', {'transfers_left': 1}))
+        self.assertEqual(code.activation_ids.device_id, self.phone)
+        self.assertEqual(self.Code._redeem(self.other, code.code, transfer=True, can_transfer=True), (code, False))
+        self.assertEqual(code.activation_ids.device_id, self.other)
+        self.assertEqual((code.transfer_count, code.used, code.remaining), (1, 1, 4), "le crédit suit le code")
+        self.assertEqual(self.Req._quota_info(self.phone)['codes'], [], "l'ancien téléphone n'a plus le code")
+        self.assertEqual(self.Req._quota_info(self.other)['all_codes'][0]['used_by_me'], 0)
+        # Plus de transfert permis : refus net.
+        with self.assertRaises(UserError) as ctx:
+            self.Code._redeem(self.phone, code.code, transfer=True, can_transfer=True)
+        self.assertEqual(ctx.exception.reason, 'code_taken')
+        # Un code partagé (classe) ne se transfère pas : il est plein.
+        shared = self.Code.create({'credits': 5, 'max_devices': 1})
+        shared.max_devices = 2
+        self.Code._redeem(self.phone, shared.code)
+        self.Code._redeem(self.other, shared.code)
+        with self.assertRaises(UserError) as ctx:
+            self.Code._redeem(self.Device._for_key('phone-bbbbbbbbbbbbbbbb'), shared.code, transfer=True,
+                              can_transfer=True)
+        self.assertEqual(ctx.exception.reason, 'code_full')
+        with self.assertRaises(ValidationError):
+            shared.max_devices = 1  # deux téléphones l'ont déjà
+
+    def test_release_by_user(self):
+        code = self.Code.create({'credits': 5})
+        self.Code._redeem(self.phone, code.code)
+        self.quiz(self.phone)
+        self.quiz(self.phone)
+        with self.assertRaises(UserError):
+            self.Code._release(self.other, code.code)  # pas le sien
+        self.Code._release(self.phone, code.code.lower())
+        self.assertFalse(code.activation_ids)
+        self.assertEqual(code.remaining, 4, "le crédit reste sur le code")
+        self.assertEqual(self.Code._redeem(self.other, code.code), (code, False), "la place est libre : on peut le donner")
+
+    def test_all_codes_lists_ended_ones(self):
+        live = self.Code.create({'credits': 5})
+        off = self.Code.create({'credits': 5})
+        for c in (live, off):
+            self.Code._redeem(self.phone, c.code)
+        off.action_disable()
+        info = self.Req._quota_info(self.phone)
+        self.assertEqual([c['code'] for c in info['codes']], [live.code], "1.4 : comme avant")
+        states = {c['code']: c['state'] for c in info['all_codes']}
+        self.assertEqual(states, {live.code: 'active', off.code: 'disabled'})
+        first = info['all_codes'][0]
+        self.assertEqual((first['code'], first['source'], first['transfers_left'], first['max_devices']),
+                         (live.code, 'gift', 3, 1))
+        self.assertTrue(first['activated'])
+
+    def test_state_search_and_stored_usage(self):
+        today = fields.Date.today()
+        fresh = self.Code.create({'credits': 2})
+        used = self.Code.create({'credits': 2})
+        empty = self.Code.create({'credits': 1})
+        old = self.Code.create({'credits': 2, 'date_expiry': today - timedelta(days=1)})
+        off = self.Code.create({'credits': 2, 'active': False})
+        self.Code._redeem(self.phone, used.code)
+        self.Code._redeem(self.phone, empty.code)
+        self.quiz(self.phone)  # gratuit
+        self.quiz(self.phone)  # sur un code (sans date : le plus ancien d'abord)
+        consumed = (used | empty).filtered('used')
+        self.assertEqual(len(consumed), 1)
+        Code = self.Code.with_context(active_test=False)
+        ids = lambda state: set(Code.search([('state', '=', state), ('id', 'in', (fresh | used | empty | old | off).ids)]).ids)
+        self.assertEqual(ids('new'), {fresh.id})
+        self.assertEqual(ids('expired'), {old.id})
+        self.assertEqual(ids('disabled'), {off.id})
+        self.assertEqual(ids('exhausted') | ids('active'), {used.id, empty.id})
+        self.assertEqual(consumed.last_used.date(), today)
+        self.assertEqual(consumed.usage_percent, 100.0 * consumed.used / consumed.credits)
+
+    def test_update_wizard(self):
+        today = fields.Date.today()
+        a = self.Code.create({'credits': 2, 'date_expiry': today - timedelta(days=5)})
+        b = self.Code.create({'credits': 3})
+        self.Code._redeem(self.phone, b.code)
+        self.quiz(self.phone)
+        self.quiz(self.phone)  # b.used = 1
+        Wizard = self.env['comprendre.ai.code.update'].with_context(active_model='comprendre.ai.code',
+                                                                   active_ids=(a | b).ids)
+        Wizard.create({'add_credits': 10, 'expiry_action': 'extend', 'extend_days': 30}).action_apply()
+        self.assertEqual((a.credits, b.credits), (12, 13))
+        self.assertEqual(a.date_expiry, today + timedelta(days=29), "un code expiré repart d'aujourd'hui")
+        self.assertEqual(a.state, 'new')
+        self.assertFalse(b.date_expiry, "sans limite : rien à prolonger")
+        Wizard.create({'add_credits': -50, 'activity': 'disable'}).action_apply()
+        self.assertEqual((a.credits, b.credits), (0, 1), "jamais moins que ce qui est déjà utilisé")
+        self.assertEqual((a.active, b.active), (False, False))
+        with self.assertRaises(UserError):
+            Wizard.create({'expiry_action': 'set', 'date_expiry': today - timedelta(days=1)}).action_apply()
 
     # -- Consommation --------------------------------------------------------
     def test_free_quota_first_then_code(self):
@@ -151,16 +255,48 @@ class TestAiCode(TransactionCase):
         # Les quiz payés par le code ne comptent pas dans ce plafond.
         self.assertEqual(self.Req._count_today([('ip_hash', '=', 'school'), ('code_id', '=', False)], ['done']), 1)
 
-    def test_generate_wizard(self):
+    def test_generate_wizard_makes_a_batch(self):
         wizard = self.env['comprendre.ai.code.generate'].create(
-            {'quantity': 5, 'name': 'Lycée moderne', 'credits': 30, 'max_devices': 1})
+            {'quantity': 5, 'batch_name': 'Lycée moderne — 1re A', 'name': 'Lycée moderne', 'credits': 30,
+             'max_devices': 1, 'prefix': 'ly-c', 'expiry_mode': 'days', 'validity_days': 30})
+        self.assertIn('5 code(s)', wizard.preview)
         action = wizard.action_generate()
-        codes = self.Code.search(action['domain'])
+        batch = self.env['comprendre.ai.code.batch'].browse(action['res_id'])
+        codes = batch.code_ids
         self.assertEqual(len(codes), 5)
+        self.assertTrue(all(c.code.startswith('LYC-') for c in codes))
         self.assertEqual(set(codes.mapped('name')), {'Lycée moderne'})
         self.assertEqual(set(codes.mapped('credits')), {30})
+        self.assertEqual(set(codes.mapped('origin')), {'batch'})
+        self.assertEqual(set(codes.mapped('batch_id.name')), {'Lycée moderne — 1re A'})
+        self.assertEqual(set(codes.mapped('date_expiry')), {fields.Date.today() + timedelta(days=29)})
+        self.assertEqual((batch.code_count, batch.credits, batch.activated_count), (5, 150, 0))
+        self.Code._redeem(self.phone, codes[0].code)
+        self.quiz(self.phone)
+        self.quiz(self.phone)
+        batch.invalidate_recordset()
+        self.assertEqual((batch.used, batch.remaining, batch.activated_count), (1, 149, 1))
+        batch.action_disable()
+        self.assertFalse(any(codes.mapped('active')))
+        batch.action_enable()
+        self.assertTrue(all(codes.mapped('active')))
+        self.assertEqual(batch.action_print_cards()['report_name'], 'comprendre_backend.report_code_cards')
+        # Un seul code : pas de lot.
+        single = self.env['comprendre.ai.code.generate'].create({'quantity': 1, 'expiry_mode': 'none'}).action_generate()
+        self.assertFalse(self.Code.browse(single['res_id']).batch_id)
         with self.assertRaises(UserError):
             self.env['comprendre.ai.code.generate'].create({'quantity': 0}).action_generate()
+        with self.assertRaises(UserError):
+            self.env['comprendre.ai.code.generate'].create({'quantity': 2, 'prefix': 'x'}).action_generate()
+
+    def test_code_cards_report(self):
+        codes = self.Code.create([{'credits': 10, 'date_expiry': fields.Date.today() + timedelta(days=10)},
+                                  {'credits': 20}])
+        html, _type = self.env['ir.actions.report']._render_qweb_html('comprendre_backend.report_code_cards', codes.ids)
+        html = html.decode()
+        for c in codes:
+            self.assertIn(c.code, html)
+        self.assertIn('data:image/png;base64,', html, "QR vers la page du code")
 
 
 @tagged('post_install', '-at_install')
@@ -182,6 +318,25 @@ class TestAiCodeApi(HttpCase):
         self.assertEqual((q['code_remaining'], q['codes'][0]['remaining']), (7, 7))
         bad = self.rpc('/redeem', device_id='api-device-code-0123456', code='XXXX-XXXX')
         self.assertEqual(bad['error']['details']['reason'], 'code_unknown')
+        again = self.rpc('/redeem', device_id='api-device-code-0123456', code=code.code)
+        self.assertTrue(again['already'])
+        # Transfert proposé (avec le nombre restant), puis confirmé ; ensuite retrait.
+        offer = self.rpc('/redeem', device_id='api-device-new-phone-01', code=code.code, can_transfer=True)
+        self.assertEqual(offer['error']['details'], {'reason': 'code_transferable', 'transfers_left': 3})
+        moved = self.rpc('/redeem', device_id='api-device-new-phone-01', code=code.code, can_transfer=True, transfer=True)
+        self.assertTrue(moved['success'], moved)
+        self.assertEqual(self.rpc('/quota', device_id='api-device-code-0123456')['all_codes'], [])
+        released = self.rpc('/code/release', device_id='api-device-new-phone-01', code=code.code)
+        self.assertEqual(released['all_codes'], [])
+        self.assertEqual(self.rpc('/code/release', device_id='api-device-new-phone-01', code=code.code)['error']['details'],
+                         {'reason': 'code_unknown'})
+
+    def test_code_page_reveals_nothing(self):
+        page = self.url_open('/comprendre/code/abcd-efgh<script>')
+        self.assertEqual(page.status_code, 200)
+        self.assertIn('ABCD-EFGH', page.text)
+        self.assertNotIn('<script>', page.text.split('<body>')[1].split('<button')[0])
+        self.assertIn('/apps/comprendre', page.text)
 
     def test_redeem_is_rate_limited(self):
         reasons = [self.rpc('/redeem', device_id='api-device-guess-0123456', code='GUES-S%03d' % i)

@@ -391,19 +391,29 @@
             <div class="attention"><p><strong>Astuce</strong> : gardez vos quiz IA pour les textes difficiles, par exemple une leçon à bien comprendre. Pour une simple révision, le quiz hors ligne suffit souvent.</p></div>
             <hr/>
             <h2 id="les-codes-ia">Les codes IA</h2>
-            <div class="exemple"><p><strong>Situation</strong> : le lycée d'Aya a obtenu des quiz IA pour ses élèves. Le professeur donne à chacun un <strong>code IA</strong>, par exemple <code>7KQ3-M9PX</code>.</p></div>
-            <p>Un code IA donne des <strong>quiz IA en plus</strong> des quiz gratuits du jour. Il vous est remis par une école, une entreprise ou un partenaire de Comprendre.</p>
+            <div class="exemple"><p><strong>Situation</strong> : le lycée d'Aya a obtenu des quiz IA pour ses élèves. Le professeur donne à chacun une <strong>carte</strong> avec un <strong>code IA</strong>, par exemple <code>7KQ3-M9PX</code>.</p></div>
+            <p>Un code IA donne des <strong>quiz IA en plus</strong> des quiz gratuits du jour. Il vous est remis par une école, une entreprise ou un partenaire de Comprendre, ou il est créé quand vous <a href="#acheter-des-quiz-ia">achetez des quiz IA</a>.</p>
             <p><strong>Activer un code</strong></p>
             <ol>
-            <li>Ouvrez <strong>Réglages → Quiz IA</strong>, puis touchez <strong>Saisir un code IA</strong>.
+            <li>Ouvrez <strong>Réglages → Quiz IA</strong>, puis touchez <strong>J'ai un code IA</strong>.
             </li>
-            <li>Tapez le code tel qu'il vous a été donné. Les majuscules, les espaces et les tirets ne comptent pas : <code>7kq3 m9px</code> marche aussi.
+            <li>Tapez le code tel qu'il vous a été donné. Les majuscules, les espaces et les tirets ne comptent pas : <code>7kq3 m9px</code> marche aussi. Si vous avez reçu le code par message, copiez-le, puis touchez l'icône <strong>Coller</strong> du champ : l'application retrouve le code dans le texte copié.
             </li>
             <li>Touchez <strong>Activer</strong>. L'application confirme, par exemple : <em>« Code activé : 20 quiz IA disponibles. »</em> Si l'IA n'était pas encore activée, elle l'est maintenant : <em>« L’IA est activée pour vos quiz. »</em>
             </li></ol>
-            <p>Une connexion Internet est nécessaire pour activer le code.</p>
-            <p><strong>Suivre son code</strong></p>
-            <p>Dans <strong>Réglages → Quiz IA</strong>, sous le nombre de quiz IA du jour (par exemple <em>Encore 15 quiz IA aujourd’hui</em>), le détail s'affiche : <em>3 du quota gratuit + 12 avec vos codes IA</em>. Chaque code a sa ligne : <em>Code 7KQ3-M9PX</em>, avec <em>12 quiz IA restants · jusqu’au 31 déc. 2026</em>.</p>
+            <p>Une connexion Internet est nécessaire pour activer le code. La carte porte aussi un <strong>QR</strong> : scanné avec l'appareil photo, il ouvre une page qui affiche le code, avec un bouton pour le copier et un lien pour installer l'application.</p>
+            <p><strong>Mes codes IA</strong></p>
+            <p>Dans <strong>Réglages → Quiz IA</strong>, la ligne <strong>Mes codes IA</strong> résume vos codes (par exemple <em>1 code · 12 quiz IA restants</em>) et prévient quand des quiz IA vont bientôt expirer. Touchez-la pour ouvrir l'écran <strong>Mes codes IA</strong> :</p>
+            <ul>
+            <li>en haut, <strong>Aujourd'hui</strong> : le nombre de quiz IA possibles, avec le détail <em>3 du quota gratuit + 12 avec vos codes IA</em> ;
+            </li>
+            <li>puis une carte par code : les quiz restants et une barre (<em>8 utilisés sur 20</em>), la date limite (<em>Expire dans 5 jours</em>, en rouge quand elle approche), le plafond du jour s'il y en a un, l'origine (<em>Reçu</em> ou <em>Acheté</em>) et la date du dernier quiz IA ;
+            </li>
+            <li>un code <strong>partagé</strong> (une classe entière, par exemple) indique combien de téléphones peuvent l'utiliser et combien de quiz vous en avez faits ;
+            </li>
+            <li>en bas, <strong>Terminés</strong> : les codes épuisés, expirés ou désactivés.
+            </li></ul>
+            <p>Le menu <strong>⋮</strong> d'un code permet de <strong>copier le code</strong> (pour le garder) ou de le <strong>retirer de ce téléphone</strong>. Sans connexion, l'écran montre le dernier état connu, avec sa date.</p>
             <p><strong>Comment les quiz sont comptés</strong></p>
             <ul>
             <li>Les quiz gratuits du jour passent <strong>en premier</strong> ; le code ne sert qu'ensuite. Ainsi, il dure plus longtemps.
@@ -412,8 +422,12 @@
             </li>
             <li>Avec plusieurs codes, celui qui expire le plus tôt sert d'abord.
             </li>
-            <li>Certains codes ont une <strong>date limite</strong> ou un <strong>plafond par jour</strong> (<em>plafond du jour atteint</em>) : c'est la personne qui vous a donné le code qui les a choisis.
+            <li>Certains codes ont une <strong>date limite</strong> ou un <strong>plafond par jour</strong> : c'est la personne qui vous a donné le code qui les a choisis.
             </li></ul>
+            <p><strong>Changer de téléphone</strong></p>
+            <p>Saisissez simplement votre code sur le nouveau téléphone. L'application demande : <em>« Transférer ce code ici ? »</em> Touchez <strong>Transférer</strong> : le code et ses quiz restants passent sur le nouveau téléphone, et l'ancien ne peut plus s'en servir. Un code peut être transféré ainsi quelques fois (le nombre restant est indiqué). Gardez donc votre code : touchez <strong>⋮ → Copier le code</strong> et notez-le.</p>
+            <p><strong>Donner un code</strong></p>
+            <p>Vous n'avez plus besoin de vos quiz IA restants ? Dans <strong>Mes codes IA</strong>, touchez <strong>⋮ → Retirer de ce téléphone</strong>. Les quiz restants restent sur le code : donnez-le à quelqu'un, qui le saisira sur son téléphone.</p>
             <p><strong>Ce qui peut bloquer</strong></p>
             <div class="tableau"><table>
             <tr>
@@ -425,8 +439,12 @@
             <td>Relisez le code, caractère par caractère.</td>
             </tr>
             <tr>
-            <td><em>Ce code IA est déjà utilisé sur un autre téléphone…</em></td>
-            <td>Un code est lié au téléphone où il a été activé. Pour changer de téléphone, demandez à la personne qui vous l'a donné de <strong>libérer</strong> le code, puis saisissez-le sur le nouveau téléphone.</td>
+            <td><em>Ce code IA est déjà utilisé sur un autre téléphone et ne peut plus être transféré…</em></td>
+            <td>Le code a déjà été transféré le nombre de fois permis. Demandez à la personne qui vous l'a donné de le <strong>libérer</strong>.</td>
+            </tr>
+            <tr>
+            <td><em>Ce code IA est déjà utilisé sur tous les téléphones prévus…</em></td>
+            <td>Un code partagé a un nombre limité de téléphones. Adressez-vous à la personne qui vous l'a donné.</td>
             </tr>
             <tr>
             <td><em>Ce code IA a expiré.</em></td>
@@ -434,7 +452,7 @@
             </tr>
             <tr>
             <td><em>Tous les quiz IA de ce code ont déjà été utilisés.</em></td>
-            <td>Demandez un nouveau code.</td>
+            <td>Demandez un nouveau code, ou achetez des quiz IA.</td>
             </tr>
             <tr>
             <td><em>Ce code IA a été désactivé.</em></td>
@@ -445,7 +463,7 @@
             <td>Après plusieurs codes faux, il faut patienter un peu.</td>
             </tr>
             </table></div>
-            <div class="attention"><p><strong>Bon à savoir</strong> : le code est lié à ce téléphone, sans compte ni donnée personnelle. Quand Android restaure vos applications sur un nouveau téléphone (même compte Google), le code suit souvent tout seul. Sinon (la sauvegarde de la bibliothèque, elle, n'emporte pas le code), faites-le libérer puis saisissez-le à nouveau.</p></div>
+            <div class="attention"><p><strong>Bon à savoir</strong> : le code est lié à ce téléphone, sans compte ni donnée personnelle. Quand Android restaure vos applications sur un nouveau téléphone (même compte Google), le code suit souvent tout seul. Sinon, saisissez-le sur le nouveau téléphone et transférez-le. La sauvegarde de la bibliothèque, elle, n'emporte pas les codes.</p></div>
             <hr/>
             <h2 id="acheter-des-quiz-ia">Acheter des quiz IA</h2>
             <div class="exemple"><p><strong>Situation</strong> : Kouamé prépare ses examens. Les 5 quiz IA gratuits par jour ne lui suffisent plus. Il en achète avec Wave.</p></div>
@@ -491,7 +509,7 @@
             </tr>
             <tr>
             <td><strong>Quiz IA</strong></td>
-            <td>L'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>. Quand il est activé, la ligne en dessous indique les quiz IA restants aujourd'hui ; l'icône ↻ met ce nombre à jour. Sans connexion, elle affiche <em>Quota IA : connexion nécessaire</em>. Ensuite viennent vos codes IA, <strong>Saisir un code IA</strong> (voir <a href="#les-codes-ia">Les codes IA</a>) et <strong>Acheter des quiz IA</strong> (voir <a href="#acheter-des-quiz-ia">Acheter des quiz IA</a>).</td>
+            <td>L'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>. Quand il est activé, la ligne en dessous indique les quiz IA restants aujourd'hui ; l'icône ↻ met ce nombre à jour. Sans connexion, elle affiche <em>Quota IA : connexion nécessaire</em>. Ensuite viennent <strong>Mes codes IA</strong>, <strong>J'ai un code IA</strong> (voir <a href="#les-codes-ia">Les codes IA</a>) et <strong>Acheter des quiz IA</strong> (voir <a href="#acheter-des-quiz-ia">Acheter des quiz IA</a>).</td>
             </tr>
             <tr>
             <td><strong>Sauvegarde</strong></td>

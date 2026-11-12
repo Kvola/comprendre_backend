@@ -196,9 +196,10 @@ class ComprendreAiOrder(models.Model):
                 'max_devices': 1,
                 'date_expiry': today + relativedelta(days=self.validity_days - 1) if self.validity_days else False,
             })
-        Activation = self.env['comprendre.ai.code.activation'].sudo()
-        if not Activation.search_count([('code_id', '=', code.id), ('device_id', '=', self.device_id.id)]):
-            Activation.create({'code_id': code.id, 'device_id': self.device_id.id})
+        # Sur l'appareil acheteur, sauf si le code a été transféré entre-temps (validation refaite) :
+        # un code d'achat ne sert qu'à un téléphone.
+        if not code.activation_ids:
+            self.env['comprendre.ai.code.activation'].sudo().create({'code_id': code.id, 'device_id': self.device_id.id})
         self.write({'code_id': code.id, 'state': 'done', 'paid_at': fields.Datetime.now()})
         self.message_post(body=_("Paiement confirmé : code %(code)s (%(credits)s quiz IA) activé sur l'appareil.",
                                  code=code.code, credits=self.credits), message_type='notification')

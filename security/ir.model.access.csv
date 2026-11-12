@@ -9,3 +9,5 @@ access_order_manager,comprendre.ai.order manager,model_comprendre_ai_order,group
 access_payment_comprendre_manager,queue.payment comprendre manager,queue_payment.model_queue_payment,group_comprendre_manager,1,1,1,0
 access_allocation_comprendre_manager,queue.payment.allocation comprendre manager,queue_payment.model_queue_payment_allocation,group_comprendre_manager,1,1,1,0
 access_refund_comprendre_manager,queue.refund comprendre manager,queue_payment.model_queue_refund,group_comprendre_manager,1,1,1,0
+access_code_batch_manager,comprendre.ai.code.batch manager,model_comprendre_ai_code_batch,group_comprendre_manager,1,1,1,1
+access_code_update_manager,comprendre.ai.code.update manager,model_comprendre_ai_code_update,group_comprendre_manager,1,1,1,1

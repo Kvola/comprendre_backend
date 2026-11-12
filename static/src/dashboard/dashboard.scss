@@ -1,0 +1,46 @@
+.o_comprendre_dashboard {
+    background: $o-webclient-background-color;
+
+    .o_cd_wrap { max-width: 1280px; margin: 0 auto; padding: 16px 20px 32px; }
+    .o_cd_head { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }
+    .o_cd_tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .o_cd_section { margin: 20px 0 10px; font-weight: 600; }
+
+    .o_cd_kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .o_cd_kpi {
+        display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+        background: $o-view-background-color; border: 1px solid $o-gray-300; border-radius: 8px; padding: 12px 14px;
+        transition: border-color .15s, box-shadow .15s;
+        &:not(.o_cd_static):hover, &:not(.o_cd_static):focus-visible { border-color: $o-action; box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+    }
+    .o_cd_label { font-size: .8rem; color: $o-gray-700; }
+    .o_cd_value { font-size: 1.6rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .o_cd_sub { font-size: .78rem; color: $o-gray-600; }
+
+    .o_cd_panel { background: $o-view-background-color; border: 1px solid $o-gray-300; border-radius: 8px; padding: 14px; margin-top: 12px; }
+    .o_cd_charts { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .o_cd_chart { position: relative; height: 240px; }
+    .o_cd_table_scroll { max-height: 320px; overflow: auto; }
+    .o_cd_grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .o_cd_row {
+        display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none;
+        border: 0; border-top: 1px solid $o-gray-200; padding: 8px 4px;
+        &:first-of-type { border-top: 0; }
+        &:hover { background: $o-gray-100; }
+    }
+    .o_cd_row_main { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+    .o_cd_meter { flex: 0 0 90px; height: 8px; border-radius: 4px; background: $o-gray-200; overflow: hidden; }
+    .o_cd_meter_fill { display: block; height: 100%; background: #2a78d6; border-radius: 4px; }
+    .o_cd_meter_val { flex: 0 0 48px; text-align: right; font-size: .8rem; font-variant-numeric: tabular-nums; }
+
+    @media (max-width: 992px) {
+        .o_cd_charts, .o_cd_grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 576px) {
+        .o_cd_wrap { padding: 12px 16px 24px; }
+        .o_cd_kpis { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .o_cd_kpi { padding: 10px; }
+        .o_cd_value { font-size: 1.3rem; }
+    }
+}

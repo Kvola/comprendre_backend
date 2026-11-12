@@ -17,10 +17,16 @@ Module Odoo 19 : serveur de l'application **Comprendre** (quiz de compréhension
 Un **code IA** donne des quiz IA en plus du quota gratuit du jour, à une personne ou à un groupe (école, entreprise, partenaire).
 
 - **Créer** : Comprendre → **Créer des codes IA** (par lots : nombre de codes, bénéficiaire, quiz offerts, plafond par jour, appareils par code, date limite), ou Comprendre → **Codes IA** → Nouveau (un code choisi, par exemple `ECOLE-2026` : 6 caractères au moins, majuscules/espaces/tirets indifférents). Les codes tirés au hasard ont 8 caractères sans 0/O ni 1/I/L (`7KQ3-M9PX`, 40 bits). Pour les distribuer : liste → sélection → Exporter.
-- **Activer** (application) : Réglages → Quiz IA → Saisir un code IA → `POST /comprendre/api/v1/redeem` (`device_id`, `code`). Le code est lié à l'appareil anonyme ; au plus `max_devices` appareils (1 par défaut). Un code inconnu, désactivé, expiré ou épuisé est refusé (`code_unknown`, `code_disabled`, `code_expired`, `code_exhausted`) sans occuper de place ; un code plein, `code_taken`. 10 essais / 10 min par adresse IP et par appareil (`AUTH_010`).
+- **Activer** (application) : Réglages → Quiz IA → J'ai un code IA → `POST /comprendre/api/v1/redeem` (`device_id`, `code`). Le code est lié à l'appareil anonyme ; au plus `max_devices` appareils (1 par défaut). Un code inconnu, désactivé, expiré ou épuisé est refusé (`code_unknown`, `code_disabled`, `code_expired`, `code_exhausted`) sans occuper de place ; un code plein, `code_taken`. 10 essais / 10 min par adresse IP et par appareil (`AUTH_010`).
 - **Consommation** : le quota gratuit d'abord, puis le code valable qui expire le plus tôt (verrou sur le code : un code partagé ne se dépense pas deux fois). Seuls les quiz réussis (ou en cours) consomment un crédit. Les quiz payés par un code ne comptent ni dans le quota gratuit ni dans le plafond par réseau (une classe sur le même Wi-Fi n'est pas bloquée). Le plafond d'échecs facturés (`daily_rejected_cap`) s'applique toujours.
 - **Suivre** : sur la fiche d'un code, appareils activés (bouton **Libérer** quand quelqu'un change de téléphone ; les quiz faits restent comptés), quiz IA et leur coût. Dans le journal, colonne et regroupement **Code IA**. **Désactiver** arrête le code tout de suite.
-- `/quota` renvoie aussi `free_remaining`, `code_remaining` et `codes` (`remaining` = gratuits + codes, lu tel quel par les applications 1.2).
+- `/quota` renvoie aussi `free_remaining`, `code_remaining` et `codes` (`remaining` = gratuits + codes, lu tel quel par les applications 1.2) ; depuis 19.0.1.5.0, `all_codes` (terminés compris, 90 jours) avec pour chaque code `state`, `used`, `used_by_me`, `max_devices`, `devices`, `activated`, `last_used`, `source` (`purchase`/`gift`), `transfers_left`.
+- **Transfert par le détenteur** (19.0.1.5.0) : un code à un seul appareil, saisi sur un autre téléphone par une application qui envoie `can_transfer`, est refusé avec `code_transferable` (+ `transfers_left`) ; renvoyé avec `transfer: true`, il passe sur le nouveau téléphone (l'ancien le perd, trace dans l'historique du code). Borné par **Transferts permis** (3 par défaut) ; au-delà, `code_taken`, et un gestionnaire libère la place. Un code partagé plein répond `code_full`. Les applications 1.3/1.4 reçoivent `code_taken` comme avant.
+- **Retrait par l'utilisateur** : `POST /code/release` (`device_id`, `code`) libère la place de ce téléphone ; le crédit reste sur le code (pour le donner).
+- **Lots** (`comprendre.ai.code.batch`) : **Créer des codes IA** réunit les codes dans un lot (nom, contact, préfixe facultatif `LYC-7KQ3-M9PX`, validité en jours ou jusqu'à une date, aperçu avant création). Le lot suit codes activés, quiz utilisés, coût, et permet **Ajouter des codes**, **Modifier tous les codes**, **Imprimer les cartes**, **Désactiver le lot**.
+- **Modifier des codes** (liste ou lot, assistant `comprendre.ai.code.update`) : ajouter des quiz, prolonger (un code expiré repart d'aujourd'hui), fixer ou retirer la date, plafond du jour, appareils, remettre les transferts à zéro, (dés)activer. Chaque code garde l'historique de ses modifications (chatter).
+- **Cartes à imprimer** (PDF, 6 par page) : code, quiz, date limite, marche à suivre et un QR vers `/comprendre/code/<code>`, page publique qui affiche le code (bouton Copier) et les liens d'installation, sans consulter la base (elle ne dit pas si un code existe).
+- Filtres : en cours, pas encore utilisés, épuisés, expirés, expirent sous 14 jours, presque épuisés, partagés, achetés/offerts ; regroupements par lot, origine, date limite.
 
 ## Vente de quiz IA (Wave, module `queue_payment`)
 
@@ -36,6 +42,17 @@ Les utilisateurs achètent des quiz IA dans l'application ; le paiement confirm�
 - **API** : `/shop` (offres, achats de l'appareil), `/buy` (`pack_id`, `client_ref` → achat + URL Wave ; 10 / 10 min / IP), `/orders` (achats + quota), `/order/wave-ref` ; page de retour `/comprendre/paiement/<réf>`.
 - Dépend de `queue_payment` (déjà installé en production pour Kavola).
 
+## Tableau de bord
+
+Page d'accueil de l'application Comprendre (action client OWL `comprendre_dashboard`, données de `comprendre.dashboard.get_data(jours)` en quelques requêtes SQL agrégées) :
+
+- **Alertes** : service fermé, clé API absente, beaucoup d'échecs aujourd'hui (crédit Anthropic épuisé ?), achats à valider.
+- **Quiz IA** (7, 30 ou 90 jours) : réussis (dont aujourd'hui), gratuits / payés par un code, coût estimé ($ et F CFA, par quiz), taux d'échec, appareils actifs ; graphiques par jour (quota gratuit / codes ; coût), ou tableau.
+- **Codes IA** : en cours, pas encore utilisés (dont distribués depuis plus de 30 jours), quiz IA encore dus (et leur coût IA à venir), expirent sous 14 jours, épuisés / expirés ; lots les plus actifs ; codes à surveiller (expirent bientôt, presque épuisés).
+- **Ventes** : encaissé, coût IA des codes vendus et marge, achats à valider, offres en vente.
+
+Chaque chiffre ouvre la liste correspondante. Réservé au groupe *Comprendre — Gestionnaire*.
+
 ## Guide d'utilisation
 
 `/apps/comprendre/guide` et `/apps/comprendre/guide.pdf`. Source unique : `comprendre/docs/GUIDE_UTILISATEUR.md` ; `reports/user_guide.xml` est **produit**. Après une modification du Markdown, depuis le dossier `sunday_jobs` :
@@ -44,7 +61,15 @@ Les utilisateurs achètent des quiz IA dans l'application ; le paiement confirm�
 python3 docs/md_to_guide_qweb.py comprendre
 ```
 
-## Réglages (Paramètres système)
+## Réglages
+
+**Comprendre → Configuration → Réglages** (Paramètres → Comprendre) : service ouvert, clé API (masquée ; indique si la variable d'environnement la fournit), modèle, taux du dollar, quotas et protections. Ces réglages écrivent les paramètres système ci-dessous.
+
+| Clé | Défaut | Rôle |
+|---|---|---|
+| `comprendre.usd_xof_rate` | 600 | F CFA pour 1 $ (tableau de bord : coût IA comparé aux ventes) |
+
+## Paramètres système
 
 | Clé | Défaut | Rôle |
 |---|---|---|

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Cartes de codes IA à imprimer et découper : 6 par page A4, avec un QR vers la page du code. -->
+    <record id="paperformat_code_cards" model="report.paperformat">
+        <field name="name">Comprendre — cartes de codes IA</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">96</field>
+    </record>
+
+    <template id="report_code_cards">
+        <t t-call="web.basic_layout">
+            <style>
+                .cd-page { page-break-after: always; }
+                .cd-page:last-child { page-break-after: auto; }
+                .cd-table { width: 100%; border-collapse: separate; border-spacing: 4mm; table-layout: fixed; }
+                .cd-card { border: 1px dashed #7a8b8f; border-radius: 3mm; padding: 5mm; height: 72mm;
+                           vertical-align: top; font-family: sans-serif; color: #0e3a44; }
+                .cd-brand { font-size: 12pt; font-weight: bold; color: #0e7c86; }
+                .cd-code { font-family: monospace; font-size: 17pt; font-weight: bold; letter-spacing: 1pt;
+                           margin: 2mm 0; white-space: nowrap; }
+                .cd-what { font-size: 13pt; font-weight: bold; }
+                .cd-steps { font-size: 10pt; line-height: 1.45; margin-top: 3mm; }
+                .cd-qr { width: 30mm; height: 30mm; }
+                .cd-small { font-size: 9.5pt; color: #4a6066; }
+            </style>
+            <t t-foreach="pages" t-as="page">
+                <div class="cd-page">
+                    <table class="cd-table">
+                        <t t-foreach="page" t-as="row">
+                            <tr>
+                                <t t-foreach="row" t-as="card">
+                                    <td class="cd-card">
+                                        <table style="width:100%"><tr>
+                                            <td style="vertical-align:top">
+                                                <div class="cd-brand">Comprendre · Code IA</div>
+                                                <div class="cd-code" t-out="card['code']"/>
+                                                <div class="cd-what">
+                                                    <t t-out="card['credits']"/> quiz IA
+                                                    <t t-if="card['daily_limit']"> · <t t-out="card['daily_limit']"/> par jour au plus</t>
+                                                </div>
+                                                <div class="cd-small">
+                                                    <t t-if="card['expiry']">Valable jusqu'au <t t-out="card['expiry']"/></t>
+                                                    <t t-else="">Sans date limite</t>
+                                                    <t t-if="card['devices'] &gt; 1"> · pour <t t-out="card['devices']"/> téléphones</t>
+                                                </div>
+                                            </td>
+                                            <td style="width:32mm; text-align:right; vertical-align:top">
+                                                <img class="cd-qr" t-att-src="card['qr']" alt="QR"/>
+                                            </td>
+                                        </tr></table>
+                                        <div class="cd-steps">
+                                            1. Installez <b>Comprendre</b> : <t t-out="apps_url"/><br/>
+                                            2. Réglages → Quiz IA → <b>J'ai un code IA</b><br/>
+                                            3. Saisissez le code, puis <b>Activer</b>.
+                                            Le QR ouvre une page pour copier le code.
+                                        </div>
+                                        <div class="cd-small" t-if="card['name']" t-out="card['name']"/>
+                                    </td>
+                                </t>
+                                <t t-if="len(row) == 1"><td/></t>
+                            </tr>
+                        </t>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_code_cards" model="ir.actions.report">
+        <field name="name">Cartes de codes IA</field>
+        <field name="model">comprendre.ai.code</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">comprendre_backend.report_code_cards</field>
+        <field name="report_file">comprendre_backend.report_code_cards</field>
+        <field name="paperformat_id" ref="paperformat_code_cards"/>
+        <field name="print_report_name">'Codes IA'</field>
+        <field name="binding_model_id" ref="model_comprendre_ai_code"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

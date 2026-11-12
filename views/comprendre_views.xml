@@ -87,7 +87,4 @@
         <field name="res_model">comprendre.device</field>
         <field name="view_mode">list</field>
     </record>
-    <menuitem id="menu_root" name="Comprendre" sequence="60" groups="comprendre_backend.group_comprendre_manager"/>
-    <menuitem id="menu_requests" name="Demandes de quiz IA" parent="menu_root" action="action_requests" sequence="10"/>
-    <menuitem id="menu_devices" name="Appareils" parent="menu_root" action="action_devices" sequence="20"/>
 </odoo>
