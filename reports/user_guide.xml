@@ -47,6 +47,8 @@
             </li>
             <li><a href="#quiz-hors-ligne-et-quiz-ia">Quiz hors ligne et quiz IA</a>
             </li>
+            <li><a href="#les-codes-ia">Les codes IA</a>
+            </li>
             <li><a href="#les-réglages">Les réglages</a>
             </li>
             <li><a href="#utiliser-lapplication-dans-le-navigateur">Utiliser l'application dans le navigateur</a>
@@ -386,6 +388,63 @@
             <p><strong>Les langues.</strong> Le quiz hors ligne se fait en <strong>français</strong> et en <strong>anglais</strong>. Pour un texte en <strong>espagnol</strong>, <strong>portugais</strong>, <strong>allemand</strong> ou <strong>italien</strong>, il faut l'IA (et donc une connexion) : sans elle, l'application l'explique, par exemple <em>« Hors ligne, les quiz ne se font qu’en français et en anglais. Pour ce texte, activez l’IA dans les réglages. »</em></p>
             <div class="attention"><p><strong>Astuce</strong> : gardez vos quiz IA pour les textes difficiles, par exemple une leçon à bien comprendre. Pour une simple révision, le quiz hors ligne suffit souvent.</p></div>
             <hr/>
+            <h2 id="les-codes-ia">Les codes IA</h2>
+            <div class="exemple"><p><strong>Situation</strong> : le lycée d'Aya a obtenu des quiz IA pour ses élèves. Le professeur donne à chacun un <strong>code IA</strong>, par exemple <code>7KQ3-M9PX</code>.</p></div>
+            <p>Un code IA donne des <strong>quiz IA en plus</strong> des quiz gratuits du jour. Il vous est remis par une école, une entreprise ou un partenaire de Comprendre.</p>
+            <p><strong>Activer un code</strong></p>
+            <ol>
+            <li>Ouvrez <strong>Réglages → Quiz IA</strong>, puis touchez <strong>Saisir un code IA</strong>.
+            </li>
+            <li>Tapez le code tel qu'il vous a été donné. Les majuscules, les espaces et les tirets ne comptent pas : <code>7kq3 m9px</code> marche aussi.
+            </li>
+            <li>Touchez <strong>Activer</strong>. L'application confirme, par exemple : <em>« Code activé : 20 quiz IA disponibles. »</em> Si l'IA n'était pas encore activée, elle l'est maintenant : <em>« L’IA est activée pour vos quiz. »</em>
+            </li></ol>
+            <p>Une connexion Internet est nécessaire pour activer le code.</p>
+            <p><strong>Suivre son code</strong></p>
+            <p>Dans <strong>Réglages → Quiz IA</strong>, sous le nombre de quiz IA du jour (par exemple <em>Encore 15 quiz IA aujourd’hui</em>), le détail s'affiche : <em>3 du quota gratuit + 12 avec vos codes IA</em>. Chaque code a sa ligne : <em>Code 7KQ3-M9PX</em>, avec <em>12 quiz IA restants · jusqu’au 31 déc. 2026</em>.</p>
+            <p><strong>Comment les quiz sont comptés</strong></p>
+            <ul>
+            <li>Les quiz gratuits du jour passent <strong>en premier</strong> ; le code ne sert qu'ensuite. Ainsi, il dure plus longtemps.
+            </li>
+            <li>Seuls les quiz IA <strong>réussis</strong> comptent. Si l'IA échoue, ou si vous touchez <strong>Créer hors ligne maintenant</strong>, le code n'est pas entamé.
+            </li>
+            <li>Avec plusieurs codes, celui qui expire le plus tôt sert d'abord.
+            </li>
+            <li>Certains codes ont une <strong>date limite</strong> ou un <strong>plafond par jour</strong> (<em>plafond du jour atteint</em>) : c'est la personne qui vous a donné le code qui les a choisis.
+            </li></ul>
+            <p><strong>Ce qui peut bloquer</strong></p>
+            <div class="tableau"><table>
+            <tr>
+            <th>Message</th>
+            <th>Que faire</th>
+            </tr>
+            <tr>
+            <td><em>Ce code IA n’existe pas. Vérifiez-le.</em></td>
+            <td>Relisez le code, caractère par caractère.</td>
+            </tr>
+            <tr>
+            <td><em>Ce code IA est déjà utilisé sur un autre téléphone…</em></td>
+            <td>Un code est lié au téléphone où il a été activé. Pour changer de téléphone, demandez à la personne qui vous l'a donné de <strong>libérer</strong> le code, puis saisissez-le sur le nouveau téléphone.</td>
+            </tr>
+            <tr>
+            <td><em>Ce code IA a expiré.</em></td>
+            <td>La date limite est passée.</td>
+            </tr>
+            <tr>
+            <td><em>Tous les quiz IA de ce code ont déjà été utilisés.</em></td>
+            <td>Demandez un nouveau code.</td>
+            </tr>
+            <tr>
+            <td><em>Ce code IA a été désactivé.</em></td>
+            <td>Adressez-vous à la personne qui vous l'a donné.</td>
+            </tr>
+            <tr>
+            <td><em>Trop d’essais : réessayez dans … min.</em></td>
+            <td>Après plusieurs codes faux, il faut patienter un peu.</td>
+            </tr>
+            </table></div>
+            <div class="attention"><p><strong>Bon à savoir</strong> : le code est lié à ce téléphone, sans compte ni donnée personnelle. Quand Android restaure vos applications sur un nouveau téléphone (même compte Google), le code suit souvent tout seul. Sinon (la sauvegarde de la bibliothèque, elle, n'emporte pas le code), faites-le libérer puis saisissez-le à nouveau.</p></div>
+            <hr/>
             <h2 id="les-réglages">Les réglages</h2>
             <p>Touchez l'icône ⚙ en haut de l'écran <strong>Mes textes</strong>.</p>
             <div class="tableau"><table>
@@ -407,7 +466,7 @@
             </tr>
             <tr>
             <td><strong>Quiz IA</strong></td>
-            <td>L'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>. Quand il est activé, la ligne en dessous indique les quiz IA restants aujourd'hui ; l'icône ↻ met ce nombre à jour. Sans connexion, elle affiche <em>Quota IA : connexion nécessaire</em>.</td>
+            <td>L'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>. Quand il est activé, la ligne en dessous indique les quiz IA restants aujourd'hui ; l'icône ↻ met ce nombre à jour. Sans connexion, elle affiche <em>Quota IA : connexion nécessaire</em>. Ensuite viennent vos codes IA, et <strong>Saisir un code IA</strong> (voir <a href="#les-codes-ia">Les codes IA</a>).</td>
             </tr>
             <tr>
             <td><strong>Sauvegarde</strong></td>
@@ -457,7 +516,7 @@
             <p><strong>Faut-il créer un compte ?</strong><br/>Non. Comprendre ne demande ni compte, ni numéro de téléphone, ni adresse e-mail.</p>
             <p><strong>Que devient mon texte quand j'utilise l'IA ?</strong><br/>Il est envoyé de façon chiffrée au serveur de Comprendre puis à l'IA, seulement pour créer le quiz. Il n'est pas conservé. Un identifiant aléatoire, sans lien avec vous, sert seulement à compter vos quiz gratuits. Vos textes et vos résultats restent sur votre téléphone.</p>
             <p><strong>Combien de quiz IA puis-je faire par jour ?</strong><br/>Le nombre est affiché dans la fenêtre <strong>Utiliser l’IA ?</strong> et dans <strong>Réglages → Quiz IA</strong> (5 par jour en principe). Seuls les quiz IA réussis sont comptés. Au-delà, vos quiz sont créés hors ligne, sans limite. Si l'IA échoue plusieurs fois le même jour sur vos textes (3 fois en principe), elle se met en pause jusqu'au lendemain.</p>
-            <p><strong>Je n'ai plus de quiz IA aujourd'hui. Que se passe-t-il ?</strong><br/>Rien de grave : vos quiz sont créés hors ligne, et un message vous le signale (<em>« quota IA du jour atteint »</em>). Les quiz IA reviennent le lendemain.</p>
+            <p><strong>Je n'ai plus de quiz IA aujourd'hui. Que se passe-t-il ?</strong><br/>Rien de grave : vos quiz sont créés hors ligne, et un message vous le signale (<em>« quota IA du jour atteint »</em>). Les quiz IA reviennent le lendemain. Avec un <a href="#les-codes-ia">code IA</a>, vous en avez davantage.</p>
             <p><strong>Comment activer ou désactiver l'IA après le premier choix ?</strong><br/>Ouvrez <strong>Réglages → Quiz IA</strong> et touchez l'interrupteur <strong>Utiliser l’IA quand c’est possible</strong>.</p>
             <p><strong>Le quiz IA est trop long à venir. Que faire ?</strong><br/>Pendant l'attente, touchez <strong>Créer hors ligne maintenant</strong> : le quiz est créé tout de suite sur le téléphone.</p>
             <p><strong>Pourquoi mon quiz a-t-il moins de questions que prévu ?</strong><br/>Quand un texte est court, il n'y a pas toujours assez de matière pour toutes les questions. Si le texte est vraiment trop court, l'application affiche : <em>« Ce texte est trop court ou trop pauvre pour un quiz. Ajoutez quelques phrases complètes. »</em></p>

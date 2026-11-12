@@ -12,6 +12,16 @@ Module Odoo 19 : serveur de l'application **Comprendre** (quiz de compréhension
 - **Pas d'invention** : chaque question doit citer mot pour mot un passage du texte ; sinon elle est écartée. Moins de 3 questions valides : le quiz est refusé et l'application garde son quiz hors ligne.
 - **Journal** (Comprendre > Demandes de quiz IA) : jetons consommés, **coût estimé en dollars** (prix public du modèle réellement utilisé, table `PRICES` de `models/comprendre.py`), durée, résultat, y compris les échecs. Vues liste, **tableau croisé** (coût par mois et par résultat) et **graphique** (coût par jour) ; regroupements par jour, mois, modèle. Le texte lui-même n'est pas conservé.
 
+## Codes IA
+
+Un **code IA** donne des quiz IA en plus du quota gratuit du jour, à une personne ou à un groupe (école, entreprise, partenaire).
+
+- **Créer** : Comprendre → **Créer des codes IA** (par lots : nombre de codes, bénéficiaire, quiz offerts, plafond par jour, appareils par code, date limite), ou Comprendre → **Codes IA** → Nouveau (un code choisi, par exemple `ECOLE-2026` : 6 caractères au moins, majuscules/espaces/tirets indifférents). Les codes tirés au hasard ont 8 caractères sans 0/O ni 1/I/L (`7KQ3-M9PX`, 40 bits). Pour les distribuer : liste → sélection → Exporter.
+- **Activer** (application) : Réglages → Quiz IA → Saisir un code IA → `POST /comprendre/api/v1/redeem` (`device_id`, `code`). Le code est lié à l'appareil anonyme ; au plus `max_devices` appareils (1 par défaut). Un code inconnu, désactivé, expiré ou épuisé est refusé (`code_unknown`, `code_disabled`, `code_expired`, `code_exhausted`) sans occuper de place ; un code plein, `code_taken`. 10 essais / 10 min par adresse IP et par appareil (`AUTH_010`).
+- **Consommation** : le quota gratuit d'abord, puis le code valable qui expire le plus tôt (verrou sur le code : un code partagé ne se dépense pas deux fois). Seuls les quiz réussis (ou en cours) consomment un crédit. Les quiz payés par un code ne comptent ni dans le quota gratuit ni dans le plafond par réseau (une classe sur le même Wi-Fi n'est pas bloquée). Le plafond d'échecs facturés (`daily_rejected_cap`) s'applique toujours.
+- **Suivre** : sur la fiche d'un code, appareils activés (bouton **Libérer** quand quelqu'un change de téléphone ; les quiz faits restent comptés), quiz IA et leur coût. Dans le journal, colonne et regroupement **Code IA**. **Désactiver** arrête le code tout de suite.
+- `/quota` renvoie aussi `free_remaining`, `code_remaining` et `codes` (`remaining` = gratuits + codes, lu tel quel par les applications 1.2).
+
 ## Guide d'utilisation
 
 `/apps/comprendre/guide` et `/apps/comprendre/guide.pdf`. Source unique : `comprendre/docs/GUIDE_UTILISATEUR.md` ; `reports/user_guide.xml` est **produit**. Après une modification du Markdown, depuis le dossier `sunday_jobs` :

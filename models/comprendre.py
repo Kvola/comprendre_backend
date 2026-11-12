@@ -129,6 +129,7 @@ class ComprendreDevice(models.Model):
     last_seen = fields.Datetime("Vu le", readonly=True)
     request_ids = fields.One2many('comprendre.ai.request', 'device_id', "Demandes")
     request_count = fields.Integer(compute='_compute_request_count')
+    code_activation_ids = fields.One2many('comprendre.ai.code.activation', 'device_id', "Codes IA")
 
     _key_unique = models.Constraint('UNIQUE(key_hash)', "Appareil déjà connu.")
 
@@ -166,6 +167,8 @@ class ComprendreAiRequest(models.Model):
     _order = 'id desc'
 
     device_id = fields.Many2one('comprendre.device', required=True, index=True, ondelete='cascade')
+    code_id = fields.Many2one('comprendre.ai.code', "Code IA", index=True, ondelete='set null', readonly=True,
+                              help="Code IA qui a payé ce quiz (vide : quota gratuit du jour).")
     ip_hash = fields.Char("IP (empreinte)", index=True)
     day = fields.Date("Jour", required=True, index=True, default=fields.Date.context_today)
     state = fields.Selection([('pending', "En cours"), ('done', "Réussie"), ('failed', "Échouée"),
@@ -207,9 +210,31 @@ class ComprendreAiRequest(models.Model):
 
     @api.model
     def _remaining(self, device):
-        """Quiz IA restants aujourd'hui pour cet appareil (les demandes en cours comptent)."""
+        """Quiz IA gratuits restants aujourd'hui pour cet appareil (les demandes en cours comptent ;
+        les quiz payés par un code IA ne comptent pas)."""
         quota = self._int_param('comprendre.daily_quota', 5)
-        return max(0, quota - self._count_today([('device_id', '=', device.id)], ['done', 'pending']))
+        return max(0, quota - self._count_today([('device_id', '=', device.id), ('code_id', '=', False)],
+                                                ['done', 'pending']))
+
+    @api.model
+    def _device_codes(self, device):
+        """Codes IA activés sur l'appareil, ceux qui expirent le plus tôt d'abord (à utiliser en premier)."""
+        codes = device.code_activation_ids.code_id.filtered('active')
+        far = fields.Date.from_string('9999-12-31')
+        return codes.sorted(lambda c: (c.date_expiry or far, c.id))
+
+    @api.model
+    def _code_remaining_today(self, device):
+        """Quiz IA que les codes de l'appareil peuvent encore payer aujourd'hui."""
+        total = 0
+        for code in self._device_codes(device):
+            if not code._valid_today():
+                continue
+            left = code.credits - code._consumed()
+            if code.daily_limit:
+                left = min(left, code.daily_limit - code._used_today_by(device))
+            total += max(0, left)
+        return total
 
     @api.model
     def _failures_exhausted(self, device):
@@ -220,14 +245,22 @@ class ComprendreAiRequest(models.Model):
     @api.model
     def _ip_exhausted(self, ip_hash):
         cap = self._int_param('comprendre.ip_daily_cap', 40)
-        return bool(ip_hash) and self._count_today([('ip_hash', '=', ip_hash)], ['done', 'pending', 'rejected']) >= cap
+        # Seuls les quiz du quota gratuit comptent : ceux d'un code IA ont leur propre crédit.
+        return bool(ip_hash) and self._count_today([('ip_hash', '=', ip_hash), ('code_id', '=', False)],
+                                                   ['done', 'pending', 'rejected']) >= cap
 
     @api.model
     def _quota_info(self, device):
         """Ce que l'application doit savoir avant de demander un quiz."""
         limited = 'failures' if self._failures_exhausted(device) else ('blocked' if device.blocked else '')
+        free = self._remaining(device)
+        from_codes = self._code_remaining_today(device)
         return {
-            'remaining': 0 if limited else self._remaining(device),
+            # Total utilisable aujourd'hui (une application 1.2 ne lit que ce champ).
+            'remaining': 0 if limited else free + from_codes,
+            'free_remaining': free,
+            'code_remaining': from_codes,
+            'codes': [code._info(device) for code in self._device_codes(device)],
             'daily': self._int_param('comprendre.daily_quota', 5),
             'max_chars': self._int_param('comprendre.max_chars', 30000),
             'enabled': self._param('comprendre.enabled', '1') not in ('0', 'False', 'false'),
@@ -333,16 +366,27 @@ class ComprendreAiRequest(models.Model):
         self.env.cr.execute('SELECT id FROM comprendre_device WHERE id = %s FOR UPDATE', [device.id])
         if device.blocked:
             raise Refusal(_("Cet appareil ne peut plus obtenir de quiz IA."), 'blocked')
-        if self._remaining(device) <= 0:
-            raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
         if self._failures_exhausted(device):
             raise Refusal(_("Le service IA n'a pas réussi plusieurs fois aujourd'hui : le quiz est créé "
                             "sur votre téléphone."), 'failures')
-        if self._ip_exhausted(ip_hash):
+        # Le quota gratuit d'abord ; ensuite un code IA (celui qui expire le plus tôt).
+        code = self.env['comprendre.ai.code']
+        if self._remaining(device) <= 0:
+            for candidate in self._device_codes(device):
+                # Verrou : un code partagé entre plusieurs téléphones ne se dépense pas deux fois.
+                self.env.cr.execute('SELECT id FROM comprendre_ai_code WHERE id = %s FOR UPDATE', [candidate.id])
+                if candidate._usable_by(device):
+                    code = candidate
+                    break
+            if not code:
+                raise Refusal(_("Quota du jour atteint : le quiz est créé sur votre téléphone."), 'quota')
+        # Le plafond par réseau protège le quota gratuit ; un code a déjà son propre crédit
+        # (une classe entière sur le même Wi-Fi ne doit pas être bloquée).
+        if not code and self._ip_exhausted(ip_hash):
             raise Refusal(_("Trop de demandes depuis ce réseau aujourd'hui."), 'network_quota')
         device.last_seen = fields.Datetime.now()
         log = self.create({'device_id': device.id, 'ip_hash': ip_hash, 'lang': lang, 'chars': len(text),
-                           'state': 'pending'})
+                           'state': 'pending', 'code_id': code.id or False})
         if not _testing():  # les tests tournent dans une transaction qu'on ne valide jamais
             self.env.cr.commit()
         return log
@@ -400,7 +444,8 @@ class ComprendreAiRequest(models.Model):
             'title': (data.get('title') or '').strip()[:200],
             'summary': (data.get('summary') or '').strip()[:1000],
             'questions': questions,
-            'remaining': self._remaining(device),
+            'remaining': self._remaining(device) + self._code_remaining_today(device),
+            'from_code': bool(log.code_id),
         }
 
     @api.model

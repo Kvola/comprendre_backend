@@ -1,3 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_device_manager,comprendre.device manager,model_comprendre_device,group_comprendre_manager,1,1,0,1
 access_request_manager,comprendre.ai.request manager,model_comprendre_ai_request,group_comprendre_manager,1,0,0,1
+access_code_manager,comprendre.ai.code manager,model_comprendre_ai_code,group_comprendre_manager,1,1,1,1
+access_code_activation_manager,comprendre.ai.code.activation manager,model_comprendre_ai_code_activation,group_comprendre_manager,1,0,0,1
+access_code_generate_manager,comprendre.ai.code.generate manager,model_comprendre_ai_code_generate,group_comprendre_manager,1,1,1,1

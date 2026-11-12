@@ -13,6 +13,7 @@ _logger = logging.getLogger(__name__)
 
 API = '/comprendre/api/v1'
 RL_QUIZ = (20, 600, 600)  # 20 demandes / 10 min / IP, avant même le quota
+RL_REDEEM = (10, 600, 900)  # 10 essais de code IA / 10 min / IP (et par appareil) : pas de recherche à l'aveugle
 
 
 def ok(**payload):
@@ -59,3 +60,23 @@ class ComprendreApi(Controller):
         if result.get('error'):
             return fail('AI_FAILED', result['error'], reason=result.get('reason', 'ai_error'))
         return ok(**result)
+
+    @route(API + '/redeem', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    def redeem(self, **kw):
+        """Active un code IA sur l'appareil. Réponse : le code et le quota à jour (comme /quota)."""
+        RateLimit = request.env['otp.rate.limit'].sudo()
+        ip = _ip_hash()
+        device_key = str(kw.get('device_id') or '')[:128]
+        for key in ('comprendre:redeem:ip:%s' % ip, 'comprendre:redeem:dev:%s' % device_key):
+            blocked, seconds = RateLimit.check_and_record(key, *RL_REDEEM)
+            if blocked:
+                minutes = max(1, round(seconds / 60))
+                return fail('AUTH_010', _("Trop d'essais. Réessayez dans %s minute(s).", minutes), reason='rate_limited',
+                            minutes=minutes)
+        try:
+            device = request.env['comprendre.device'].sudo()._for_key(kw.get('device_id'))
+            code = request.env['comprendre.ai.code'].sudo()._redeem(device, kw.get('code'))
+        except UserError as e:
+            return fail('REFUSED', str(e.args[0]), reason=getattr(e, 'reason', 'refused'))
+        return ok(redeemed=code._info(device), **request.env['comprendre.ai.request'].sudo()._quota_info(device))
+
