@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_ai_order" model="ir.sequence">
+            <field name="name">Achats de quiz IA</field>
+            <field name="code">comprendre.ai.order</field>
+            <field name="prefix">ACH-%(year)s-</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+        <!-- Offres d'exemple, DÉSACTIVÉES : prix à fixer d'après le coût réel de l'IA
+             (Comprendre → Demandes de quiz IA → Tableau croisé), puis à activer. -->
+        <record id="pack_discovery" model="comprendre.ai.pack">
+            <field name="name">Découverte</field>
+            <field name="description">Pour essayer les quiz IA</field>
+            <field name="sequence">10</field>
+            <field name="credits">10</field>
+            <field name="price">1000</field>
+            <field name="validity_days">90</field>
+            <field name="active" eval="False"/>
+        </record>
+        <record id="pack_study" model="comprendre.ai.pack">
+            <field name="name">Étude</field>
+            <field name="description">Un trimestre de révisions</field>
+            <field name="sequence">20</field>
+            <field name="credits">30</field>
+            <field name="price">2500</field>
+            <field name="validity_days">180</field>
+            <field name="active" eval="False"/>
+        </record>
+        <record id="pack_intensive" model="comprendre.ai.pack">
+            <field name="name">Intensif</field>
+            <field name="description">Toute une année</field>
+            <field name="sequence">30</field>
+            <field name="credits">100</field>
+            <field name="price">7500</field>
+            <field name="validity_days">365</field>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+    <data>
+        <record id="cron_cancel_stale_orders" model="ir.cron">
+            <field name="name">Comprendre : annuler les achats de quiz IA jamais payés (30 jours)</field>
+            <field name="model_id" ref="model_comprendre_ai_order"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_cancel_stale(30)</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+        </record>
+    </data>
+</odoo>

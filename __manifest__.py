@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Comprendre — quiz de compréhension par IA",
-    'version': '19.0.1.3.0',
+    'version': '19.0.1.4.0',
     'category': 'Productivity',
     'summary': "Serveur de l'application Comprendre : génère un quiz de compréhension "
                "à partir d'un texte avec Claude, quota quotidien par appareil",
@@ -29,15 +29,17 @@ variable d'environnement ``ANTHROPIC_API_KEY``), ``comprendre.model``,
     """,
     'author': 'ICP',
     'website': 'https://ivorycocoa.ci',
-    'depends': ['base', 'otp_auth', 'mobile_app_release'],
+    'depends': ['base', 'mail', 'otp_auth', 'mobile_app_release', 'queue_payment'],
     'external_dependencies': {'python': ['anthropic']},
     'data': [
         'security/comprendre_security.xml',
         'security/ir.model.access.csv',
         'reports/user_guide.xml',
         'data/comprendre_data.xml',
+        'data/purchase_data.xml',
         'views/comprendre_views.xml',
         'views/ai_code_views.xml',
+        'views/purchase_views.xml',
     ],
     'installable': True,
     'application': True,

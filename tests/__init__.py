@@ -2,3 +2,4 @@
 from . import test_comprendre
 from . import test_guide
 from . import test_ai_code
+from . import test_purchase

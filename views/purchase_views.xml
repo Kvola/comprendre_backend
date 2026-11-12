@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Offres -->
+    <record id="view_pack_list" model="ir.ui.view">
+        <field name="name">comprendre.ai.pack.list</field>
+        <field name="model">comprendre.ai.pack</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="credits"/>
+                <field name="price"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="validity_days"/>
+                <field name="daily_limit" optional="hide"/>
+                <field name="company_id" optional="hide" groups="base.group_multi_company"/>
+                <field name="sold_count"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    <record id="action_packs" model="ir.actions.act_window">
+        <field name="name">Offres de quiz IA</field>
+        <field name="res_model">comprendre.ai.pack</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'active_test': False}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Créez une offre de quiz IA</p>
+            <p>Les offres actives sont proposées dans l'application (Réglages → Quiz IA → Acheter des quiz IA),
+               payées par Wave ; le paiement confirmé délivre un code IA activé sur le téléphone.</p>
+        </field>
+    </record>
+
+    <!-- Achats -->
+    <record id="view_order_list" model="ir.ui.view">
+        <field name="name">comprendre.ai.order.list</field>
+        <field name="model">comprendre.ai.order</field>
+        <field name="arch" type="xml">
+            <list create="0" decoration-success="state == 'done'" decoration-muted="state == 'cancelled'"
+                  decoration-warning="awaiting_validation">
+                <field name="name"/>
+                <field name="create_date" string="Le"/>
+                <field name="pack_id"/>
+                <field name="credits"/>
+                <field name="amount" sum="Total"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="pay_mode" optional="show"/>
+                <field name="wave_ref" optional="show"/>
+                <field name="awaiting_validation" optional="hide"/>
+                <field name="payment_state" widget="badge" optional="show"/>
+                <field name="code_id" optional="show"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+    <record id="view_order_form" model="ir.ui.view">
+        <field name="name">comprendre.ai.order.form</field>
+        <field name="model">comprendre.ai.order</field>
+        <field name="arch" type="xml">
+            <form create="0">
+                <header>
+                    <button name="action_cancel" type="object" string="Annuler l'achat" invisible="state != 'draft'"
+                            confirm="Annuler cet achat et ses paiements en attente ?"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_payments" type="object" class="oe_stat_button" icon="fa-money">
+                            <field name="payment_count" widget="statinfo" string="Paiements"/>
+                        </button>
+                    </div>
+                    <div class="oe_title"><h1><field name="name"/></h1></div>
+                    <div class="alert alert-warning" role="alert" invisible="not awaiting_validation">
+                        Paiement Wave déclaré, à valider : vérifiez sur le compte marchand Wave qu'un versement de ce
+                        montant est arrivé (identifiant de transaction ci-dessous s'il a été donné), puis ouvrez
+                        <b>Paiements</b> et validez. Le code IA est alors délivré automatiquement.
+                    </div>
+                    <group>
+                        <group string="Achat">
+                            <field name="pack_id"/>
+                            <field name="credits"/>
+                            <field name="validity_days"/>
+                            <field name="amount"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="device_id"/>
+                        </group>
+                        <group string="Paiement">
+                            <field name="pay_mode"/>
+                            <field name="wave_ref"/>
+                            <field name="payment_state"/>
+                            <field name="amount_paid"/>
+                            <field name="paid_at"/>
+                            <field name="code_id"/>
+                            <field name="awaiting_validation" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="view_order_search" model="ir.ui.view">
+        <field name="name">comprendre.ai.order.search</field>
+        <field name="model">comprendre.ai.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="wave_ref"/>
+                <filter name="to_validate" string="À valider" domain="[('awaiting_validation', '=', True)]"/>
+                <filter name="done" string="Payés" domain="[('state', '=', 'done')]"/>
+                <filter name="draft" string="À payer" domain="[('state', '=', 'draft')]"/>
+                <group>
+                    <filter name="by_pack" string="Offre" context="{'group_by': 'pack_id'}"/>
+                    <filter name="by_month" string="Mois" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    <record id="action_orders" model="ir.actions.act_window">
+        <field name="name">Achats de quiz IA</field>
+        <field name="res_model">comprendre.ai.order</field>
+        <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_orders_to_validate" model="ir.actions.act_window">
+        <field name="name">Achats à valider</field>
+        <field name="res_model">comprendre.ai.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_to_validate': 1}</field>
+    </record>
+
+    <menuitem id="menu_shop" name="Ventes de quiz IA" parent="menu_root" sequence="17"/>
+    <menuitem id="menu_orders_to_validate" name="Achats à valider" parent="menu_shop" action="action_orders_to_validate" sequence="1"/>
+    <menuitem id="menu_orders" name="Tous les achats" parent="menu_shop" action="action_orders" sequence="2"/>
+    <menuitem id="menu_packs" name="Offres" parent="menu_shop" action="action_packs" sequence="3"/>
+</odoo>

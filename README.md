@@ -22,6 +22,20 @@ Un **code IA** donne des quiz IA en plus du quota gratuit du jour, à une person
 - **Suivre** : sur la fiche d'un code, appareils activés (bouton **Libérer** quand quelqu'un change de téléphone ; les quiz faits restent comptés), quiz IA et leur coût. Dans le journal, colonne et regroupement **Code IA**. **Désactiver** arrête le code tout de suite.
 - `/quota` renvoie aussi `free_remaining`, `code_remaining` et `codes` (`remaining` = gratuits + codes, lu tel quel par les applications 1.2).
 
+## Vente de quiz IA (Wave, module `queue_payment`)
+
+Les utilisateurs achètent des quiz IA dans l'application ; le paiement confirmé **délivre un code IA activé sur leur téléphone** (rien à saisir).
+
+- **Offres** : Comprendre → Ventes de quiz IA → **Offres** (nom, quiz IA, prix, validité en jours, plafond par jour). Trois offres d'exemple sont livrées **désactivées** : fixez les prix d'après le coût réel (Demandes de quiz IA → tableau croisé), puis activez-les.
+- **Société qui encaisse** : paramètre `comprendre.company_id`, sinon la société principale ; devise = celle de la société (XOF en production).
+- **Paiement** (`comprendre.ai.order`, encaissable par `queue.payable.mixin`) :
+  - **API Wave Checkout** activée sur la société (Paramètres de la société → Wave : clé API, secret webhook) : session Wave, confirmation par webhook signé sur `/queue/wave/webhook/<id société>` → code délivré tout seul. À déclarer côté compte marchand Wave.
+  - Sinon **lien marchand** (de la société, de la plateforme, ou celui de l'opérateur en dernier recours, car Comprendre est un produit de la plateforme) : l'acheteur paie, puis un agent **valide** dans Comprendre → Ventes de quiz IA → **Achats à valider** (bouton Paiements → Valider) après avoir vu l'argent sur le compte Wave ; l'acheteur peut donner l'identifiant de sa transaction (colonne *Transaction Wave*).
+  - Une session Wave impossible retombe sur le lien marchand.
+- **Garanties** : un achat renvoyé avec la même clé (`client_ref`) est le même achat, avec le même paiement ; un webhook rejoué ne crédite pas deux fois ; une validation défaite désactive le code, une nouvelle validation le réactive (jamais deux codes) ; achats non payés annulés au bout de 30 jours (tâche quotidienne) ; un appareil ne voit et ne touche que ses achats.
+- **API** : `/shop` (offres, achats de l'appareil), `/buy` (`pack_id`, `client_ref` → achat + URL Wave ; 10 / 10 min / IP), `/orders` (achats + quota), `/order/wave-ref` ; page de retour `/comprendre/paiement/<réf>`.
+- Dépend de `queue_payment` (déjà installé en production pour Kavola).
+
 ## Guide d'utilisation
 
 `/apps/comprendre/guide` et `/apps/comprendre/guide.pdf`. Source unique : `comprendre/docs/GUIDE_UTILISATEUR.md` ; `reports/user_guide.xml` est **produit**. Après une modification du Markdown, depuis le dossier `sunday_jobs` :

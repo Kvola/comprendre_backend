@@ -4,3 +4,8 @@ access_request_manager,comprendre.ai.request manager,model_comprendre_ai_request
 access_code_manager,comprendre.ai.code manager,model_comprendre_ai_code,group_comprendre_manager,1,1,1,1
 access_code_activation_manager,comprendre.ai.code.activation manager,model_comprendre_ai_code_activation,group_comprendre_manager,1,0,0,1
 access_code_generate_manager,comprendre.ai.code.generate manager,model_comprendre_ai_code_generate,group_comprendre_manager,1,1,1,1
+access_pack_manager,comprendre.ai.pack manager,model_comprendre_ai_pack,group_comprendre_manager,1,1,1,1
+access_order_manager,comprendre.ai.order manager,model_comprendre_ai_order,group_comprendre_manager,1,1,0,0
+access_payment_comprendre_manager,queue.payment comprendre manager,queue_payment.model_queue_payment,group_comprendre_manager,1,1,1,0
+access_allocation_comprendre_manager,queue.payment.allocation comprendre manager,queue_payment.model_queue_payment_allocation,group_comprendre_manager,1,1,1,0
+access_refund_comprendre_manager,queue.refund comprendre manager,queue_payment.model_queue_refund,group_comprendre_manager,1,1,1,0
